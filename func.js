@@ -1,52 +1,81 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const player = document.getElementById('player');
+const enemy1 = document.getElementById('enemy1');
+const stage = document.getElementById('stage');
 
-// Jugador y enemigo (Pizarro)
-let player = { x: 50, y: 300, width: 40, height: 60, color: 'green', health: 100 };
-let enemy = { x: 600, y: 300, width: 40, height: 60, color: 'red', health: 100 };
+// Posiciones iniciales
+let playerX = 0;
+let playerZ = 0;
+let enemyX = 300;
+let enemyZ = 50;
 
-// Movimiento
-let keys = {};
-document.addEventListener('keydown', e => keys[e.key] = true);
-document.addEventListener('keyup', e => keys[e.key] = false);
+// Tamaño del escenario
+const stageWidth = window.innerWidth;
+const stageDepth = 300; // corregido: menor profundidad máxima
 
-function update() {
-  if (keys['ArrowRight']) player.x += 4;
-  if (keys['ArrowLeft']) player.x -= 4;
+function updateCharacterPosition(el, x, z) {
+    const screenX = stageWidth / 2 + x - z * 0.5;
+    const screenY = z * 0.3;
 
-  // Colisión simple
-  if (player.x + player.width > enemy.x && player.x < enemy.x + enemy.width) {
-    enemy.health -= 1;
-    document.getElementById('playerHealth').textContent = player.health;
-    if (enemy.health <= 0) {
-      alert('¡Has vencido a Pizarro y liberado el camino de Atahualpa!');
-      resetGame();
+    el.style.left = `${screenX}px`;
+    el.style.bottom = `${100 + screenY}px`;
+    el.style.transform = `translateX(-50%) scale(${1 - z * 0.001})`;
+    el.dataset.z = z; // Usamos esto para orden de capas
+}
+
+function updateZIndex() {
+    const zPlayer = parseFloat(player.dataset.z);
+    const zEnemy = parseFloat(enemy1.dataset.z);
+
+    if (zPlayer > zEnemy) {
+        player.style.zIndex = 1;
+        enemy1.style.zIndex = 2;
+    } else {
+        player.style.zIndex = 2;
+        enemy1.style.zIndex = 1;
     }
-  }
 }
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Dibujar jugador
-  ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.width, player.height);
-
-  // Dibujar enemigo
-  ctx.fillStyle = enemy.color;
-  ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+function updatePositions() {
+    updateCharacterPosition(player, playerX, playerZ);
+    updateCharacterPosition(enemy1, enemyX, enemyZ);
+    updateZIndex();
 }
 
-function gameLoop() {
-  update();
-  draw();
-  requestAnimationFrame(gameLoop);
-}
+// Controles
+document.addEventListener('keydown', (e) => {
+    const speed = 10;
+    const depthSpeed = 5;
 
-function resetGame() {
-  player.x = 50;
-  enemy.x = 600;
-  enemy.health = 100;
-}
+    switch (e.key) {
+        case 'ArrowLeft':
+            playerX -= speed;
+            break;
+        case 'ArrowRight':
+            playerX += speed;
+            break;
+        case 'ArrowUp':
+            playerZ = Math.max(0, playerZ - depthSpeed);
+            break;
+        case 'ArrowDown':
+            playerZ = Math.min(stageDepth, playerZ + depthSpeed);
+            break;
+    }
 
-gameLoop();
+    updatePositions();
+});
+
+// Inicializar
+updatePositions();
+
+// Movimiento simple del enemigo
+setInterval(() => {
+    enemyX += (Math.random() - 0.5) * 10;
+    enemyZ += (Math.random() - 0.5) * 5;
+
+    // Limitar movimiento del enemigo
+    enemyX = Math.max(-200, Math.min(200, enemyX));
+    enemyZ = Math.max(0, Math.min(stageDepth, enemyZ));
+
+    updatePositions();
+}, 200);
+
