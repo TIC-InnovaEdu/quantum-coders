@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Runapachawan - Nivel 1</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beat 'Em Up 2.5D</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="game-container">
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
-    <div id="hud">
-      <p><strong>Jugador:</strong> Tupak</p>
-      <p><strong>Salud:</strong> <span id="playerHealth">100</span></p>
-      <p><strong>Historia:</strong> Resiste la conquista española y enfrenta a Pizarro.</p>
+    <div id="game-container">
+        <div class="background"></div>
+        <div id="stage">
+            <div class="floor"></div>
+            <div class="character" id="player"></div>
+            <div class="enemy" id="enemy1"></div>
+        </div>
     </div>
-  </div>
 
-  <script src="game.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>
