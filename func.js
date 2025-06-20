@@ -1,6 +1,7 @@
 const player = document.getElementById('player');
 const enemy1 = document.getElementById('enemy1');
 const stage = document.getElementById('stage');
+const keysPressed = {};
 
 // Posiciones iniciales
 let playerX = 0;
@@ -11,6 +12,14 @@ let enemyZ = 50;
 // Tamaño del escenario
 const stageWidth = window.innerWidth;
 const stageDepth = 300; // corregido: menor profundidad máxima
+
+document.addEventListener('keydown', (e) => {
+    keysPressed[e.key] = true;
+});
+
+document.addEventListener('keyup', (e) => {
+    keysPressed[e.key] = false;
+});
 
 function updateCharacterPosition(el, x, z) {
     const screenX = stageWidth / 2 + x - z * 0.5;
@@ -41,28 +50,30 @@ function updatePositions() {
     updateZIndex();
 }
 
-// Controles
-document.addEventListener('keydown', (e) => {
+function movePlayer() {
     const speed = 10;
     const depthSpeed = 5;
 
-    switch (e.key) {
-        case 'ArrowLeft':
-            playerX -= speed;
-            break;
-        case 'ArrowRight':
-            playerX += speed;
-            break;
-        case 'ArrowUp':
-            playerZ = Math.max(0, playerZ - depthSpeed);
-            break;
-        case 'ArrowDown':
-            playerZ = Math.min(stageDepth, playerZ + depthSpeed);
-            break;
+    // Movimiento horizontal
+    if (keysPressed['ArrowLeft']) playerX -= speed;
+    if (keysPressed['ArrowRight']) playerX += speed;
+
+    // Movimiento en profundidad (Z)
+    if (keysPressed['ArrowDown'] && !keysPressed['ArrowLeft'] && !keysPressed['ArrowRight']) {
+        playerZ = Math.max(0, playerZ - depthSpeed);
+    } else if (keysPressed['ArrowUp'] && !keysPressed['ArrowLeft'] && !keysPressed['ArrowRight']) {
+        playerZ = Math.min(stageDepth, playerZ + depthSpeed);
     }
 
-    updatePositions();
-});
+    // Movimiento diagonal (opcional)
+    if (keysPressed['ArrowDown'] && (keysPressed['ArrowLeft'] || keysPressed['ArrowRight'])) {
+        playerZ = Math.max(0, playerZ - depthSpeed);
+    }
+    if (keysPressed['ArrowUp'] && (keysPressed['ArrowLeft'] || keysPressed['ArrowRight'])) {
+        playerZ = Math.min(stageDepth, playerZ + depthSpeed);
+    }
+}
+
 
 // Inicializar
 updatePositions();
@@ -79,3 +90,10 @@ setInterval(() => {
     updatePositions();
 }, 200);
 
+function gameLoop() {
+    movePlayer();
+    updatePositions();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
