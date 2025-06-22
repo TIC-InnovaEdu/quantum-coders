@@ -4,6 +4,10 @@ const trigger = document.getElementById('trigger1');
 const enemy2 = document.getElementById('enemy2');
 const stage = document.getElementById('stage');
 const keysPressed = {};
+player.style.backgroundImage = "url('Resources/Player.png')";
+enemy1.style.backgroundImage = "url('Resources/trigger (2).png')";
+enemy2.style.backgroundImage = "url('Resources/enemy2.png')";
+
 
 // Posiciones iniciales
 let playerX = 0;
@@ -164,6 +168,7 @@ function startScene2() {
     hideDialogue();
     scene = 2;
     transitioning = false;
+    document.getElementById("background").style.backgroundImage = "url('Resources/BackGround.png')";
 
     enemy1.style.display = 'none';
     trigger.style.display = 'none';
@@ -175,6 +180,7 @@ function startScene2() {
     updatePositions();
 }
 
+document.getElementById("background").style.backgroundImage = "url('Resources/Background1.png')";
 function gameLoop() {
     movePlayer();
     if (scene === 1) {
