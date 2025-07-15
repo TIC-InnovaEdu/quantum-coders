@@ -1,200 +1,84 @@
 body {
     margin: 0;
-    overflow: hidden; /* Oculta las barras de desplazamiento */
-    background-color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    font-family: 'Press Start 2P', cursive; /* Ideal para estilo pixel art, deberás enlazar esta fuente */
+    overflow: hidden;
+    background: #222;
 }
 
 #game-container {
+    width: 100vw;
+    height: 100vh;
     position: relative;
-    width: 960px; /* Ancho del juego, ajusta según tus necesidades */
-    height: 540px; /* Alto del juego (ej. 16:9), ajusta según tus necesidades */
-    border: 2px solid #fff;
-    overflow: hidden; /* Asegura que los elementos se mantengan dentro del contenedor */
-    background-color: #555;
-    image-rendering: pixelated; /* Esencial para que el pixel art se vea nítido */
-}
-
-.background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-size: cover; /* Ajusta la imagen de fondo para cubrir el contenedor */
-    background-position: center bottom;
-    z-index: 1; /* Detrás de otros elementos del juego */
+    perspective: 1000px;
+    transform-style: preserve-3d;
 }
 
 #stage {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
-    z-index: 2;
-}
-
-#floor {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 50px; /* Altura del suelo, el jugador "aterrizará" sobre esta línea */
-    background-color: #222; /* Color de relleno para el suelo, puedes usar una imagen */
-    z-index: 3;
+    position: relative;
+    transform: rotateX(45deg) scale(0.8);
+    transform-origin: center;
 }
 
 .character, .enemy {
     position: absolute;
-    width: 64px; /* Ancho base de los personajes y enemigos */
-    height: 64px; /* Alto base de los personajes y enemigos */
-    background-size: contain; /* Ajusta la imagen de fondo para caber en el elemento */
+    width: 200px;
+    height: 250px;
+    bottom: 80px;
+    transform: translateX(-50%);
+    transition: all 0.2s;
+    background-size: contain;
+    background-position: center;
     background-repeat: no-repeat;
-    background-position: center bottom; /* Asegura que los pies del personaje estén en la parte inferior */
-    transition: transform 0.05s linear; /* Transición suave para movimientos de escalado/volteo */
-    z-index: 4; /* Valor base de z-index, se actualizará dinámicamente */
+    background-color: transparent;
 }
 
-/* --- Estilos del Jugador --- */
-#player {
-    bottom: 50px; /* Se posiciona encima del suelo */
-    left: 100px; /* Posición inicial */
-    background-image: url('Resources/Player.png'); /* Sprite por defecto (idle) */
-}
-
-#player.walking {
-    background-image: url('Resources/Player_Walk.gif'); /* Animación de caminar */
-}
-
-#player.jumping {
-    background-image: url('Resources/Player_Jump.png'); /* Sprite de salto */
-}
-
-#player.attacking {
-    background-image: url('Resources/Player_Attack.png'); /* Sprite de ataque */
-    /* Puedes ajustar transform-origin o el tamaño si tu sprite de ataque es diferente */
-}
-
-#player.damaged {
-    animation: flash 0.2s 3 alternate; /* Efecto de parpadeo cuando es golpeado */
-}
-
-#player.dead {
-    background-image: url('Resources/Player_Death.png'); /* Sprite de muerte */
-    /* Puedes añadir más estilos como rotación o encogimiento */
-    transform: translateY(20px) rotate(90deg);
-    opacity: 0.8;
-}
-
-/* --- Estilos de los Enemigos --- */
-.enemy {
-    background-image: url('Resources/enemy_idle.png'); /* Sprite por defecto del enemigo */
-    bottom: 50px; /* Sobre el suelo */
-}
-
-.enemy.walking {
-    background-image: url('Resources/enemy_walk.gif'); /* Animación de caminar del enemigo */
-}
-
-.enemy.damaged {
-    animation: flash 0.15s 2 alternate; /* Efecto de parpadeo cuando el enemigo es golpeado */
-    filter: brightness(1.5); /* Hace que el enemigo brille al ser golpeado */
-}
-
-.enemy.dead {
-    background-image: url('Resources/enemy_death.png'); /* Sprite de muerte del enemigo */
-    opacity: 0.5; /* Se vuelve semi-transparente al morir */
-    transform: translateY(20px) rotate(90deg); /* Se cae */
-}
-
-
-/* --- Efecto de Voltear para Mirar a la Izquierda --- */
-.character.facing-left, .enemy.facing-left {
-    transform: scaleX(-1); /* Voltea horizontalmente el sprite */
-}
-
-/* --- UI de Vidas --- */
-#lives-display {
+#enemy1 {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    color: white;
-    font-size: 24px;
-    z-index: 100; /* Asegura que esté por encima de todo */
-    display: flex;
-    align-items: center;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Sombra para mejor visibilidad */
-}
-
-.life-icon {
-    width: 30px; /* Tamaño del icono de vida (corazón) */
-    height: 30px;
-    background-image: url('Resources/heart_icon.png'); /* Imagen de corazón */
+    width: 430px;
+    height: 450px;
     background-size: contain;
     background-repeat: no-repeat;
-    margin-right: 5px;
+    background-position: top;
+    bottom: 50px;
+    transform: translate(-50%);
 }
 
-/* --- Caja de Diálogo --- */
-#dialogueBox {
+
+#floor {
     position: absolute;
-    bottom: 150px;
+    bottom: 40px;
     left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 15px 25px;
-    border: 2px solid white;
-    border-radius: 10px;
-    font-size: 20px;
-    font-family: 'Press Start 2P', cursive;
-    z-index: 999; /* Por encima de todo */
-    white-space: nowrap; /* Evita que el texto se envuelva si es corto */
+    transform: translateX(-50%) rotateX(60deg);
+    width: 2000px; /* Ancho de la escena */
+    height: 400px;  /* profundidad */
+    background: repeating-linear-gradient(90deg,#2b1f14, #2b1f14 10px, #241b12 10px,#241b12 20px);
+    border: 2px solid #111;
+    box-shadow: 0 -20px 80px rgba(0, 0, 0, 0.6) inset;
+    transform-origin: bottom;
+    z-index: 0;
 }
 
-/* --- Pantalla de Game Over --- */
-#game-over-screen {
+
+.background {
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
-    color: white;
-    font-size: 48px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 200; /* Por encima de todo, excepto quizás el diálogo */
-    text-align: center;
-    display: none; /* Oculto por defecto */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1;
 }
 
-#game-over-screen button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 24px;
-    background-color: #4CAF50; /* Color verde */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: 'Press Start 2P', cursive;
-    transition: background-color 0.3s ease;
-}
-
-#game-over-screen button:hover {
-    background-color: #45a049;
-}
-
-/* --- Animación de Parpadeo (General) --- */
-@keyframes flash {
-    from { opacity: 1; }
-    to { opacity: 0.3; } /* Vuelve semi-transparente */
+.scene-trigger {
+    position: absolute;
+    width: 200px;
+    height: 300px;
+    background-image: url('Resources/PTrigger.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: top;
+    bottom: 50px;
+    transform: translate(-50%);
+    z-index: 2;
 }
