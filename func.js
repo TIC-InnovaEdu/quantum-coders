@@ -1,4 +1,3 @@
-// Archivo .js adaptado para juego 2D tipo plataformas
 const player = document.getElementById('player');
 const enemy1 = document.getElementById('enemy1');
 const trigger = document.getElementById('trigger1');
@@ -11,24 +10,25 @@ enemy1.style.backgroundImage = "url('Resources/trigger (2).png')";
 enemy2.style.backgroundImage = "url('Resources/enemy2.png')";
 
 let playerX = 0;
-let playerY = 0;
+let playerY = 120;
 let velocityY = 0;
 let isJumping = false;
 
 let enemyX = 600;
-let enemyY = 0;
+let enemyY = 120;
 
 let triggerX = 900;
-let triggerY = 0;
+let triggerY = 120;
 
 let enemy2X = 400;
-let enemy2Y = 0;
+let enemy2Y = 120;
 
 let scene = 1;
 let transitioning = false;
 
 const gravity = 1;
-const groundLevel = 80;
+const groundLevel = 120;
+
 
 // Eventos de teclado
 document.addEventListener('keydown', e => keysPressed[e.key] = true);
