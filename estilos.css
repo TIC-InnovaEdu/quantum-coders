@@ -41,9 +41,20 @@ body {
     z-index: 2; 
 }
 
+#player {
+    width: 100px;
+    height: 150px;
+    bottom: 90px;
+}
+#player.grande {
+  transform: scale(2.5);
+}
+
+
 
 #floor {
     position: absolute;
+    margin-top: 0px;
     bottom: 0px;
     left: 0;
     width: 2000px;
@@ -62,13 +73,13 @@ body {
 
 .scene-trigger {
     position: absolute;
-    width: 80px;
-    height: 120px;
+    width: 200px;
+    height: 320px;
     background-image: url('Resources/PTrigger.png');
     background-size: contain;
     background-repeat: no-repeat;
-    background-position: center;
-    bottom: 100px;
+    background-position: bottom;
+    bottom: 20px;
     z-index: 2;
 }
 
