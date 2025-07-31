@@ -10,7 +10,7 @@ enemy1.style.backgroundImage = "url('Resources/trigger (2).png')";
 enemy2.style.backgroundImage = "url('Resources/enemy2.png')";
 
 let playerX = 0;
-let playerY = 120;
+let playerY = 100;
 let velocityY = 0;
 let isJumping = false;
 
@@ -18,16 +18,16 @@ let enemyX = 600;
 let enemyY = 120;
 
 let triggerX = 900;
-let triggerY = 120;
+let triggerY = 100;
 
-let enemy2X = 400;
-let enemy2Y = 120;
+let enemy2X = 900;
+let enemy2Y = 100;
 
 let scene = 1;
 let transitioning = false;
 
-const gravity = 1;
-const groundLevel = 120;
+const gravity = 0.6;
+const groundLevel = 100;
 
 
 // Eventos de teclado
@@ -64,17 +64,44 @@ function applyGravity() {
 
 function movePlayer() {
     const speed = 5;
+    let moving = false;
 
-    if (keysPressed['ArrowLeft']) playerX -= speed;
-    if (keysPressed['ArrowRight']) playerX += speed;
+    // Movimiento horizontal
+    if (keysPressed['ArrowLeft']) {
+        playerX -= speed;
+        player.style.transform = "scaleX(1)";
+        moving = true;
+    }
 
+    if (keysPressed['ArrowRight']) {
+        playerX += speed;
+        player.style.transform = "scaleX(-1)";
+        moving = true;
+    }
+
+    // Saltar
     if (keysPressed[' '] && !isJumping) {
         velocityY = 15;
         isJumping = true;
     }
 
     applyGravity();
+
+    // Cambiar sprite según estado
+    if (isJumping) {
+        if (velocityY > 0) {
+            player.style.backgroundImage = "url('Resources/Player_Jump.png')";
+        } else {
+            player.style.backgroundImage = "url('Resources/Player_Fall.png')";
+        }
+    } else if (moving) {
+        player.style.backgroundImage = "url('Resources/Player_Run.png')";
+        player.classList.add("grande");
+    } else {
+        player.style.backgroundImage = "url('Resources/Player_Idle.png')";
+    }
 }
+
 
 function checkTriggerCollision() {
     if (playerX > triggerX && !transitioning) {
@@ -135,3 +162,4 @@ function hideDialogue() {
     const box = document.getElementById('dialogueBox');
     if (box) box.remove();
 }
+
