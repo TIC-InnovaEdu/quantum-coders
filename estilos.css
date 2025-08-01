@@ -52,10 +52,14 @@ body {
     height: 150px;
     bottom: 90px;
 }
-#player[style*="Player_Run.png"] {
-    background-size: 130% auto;
-}
 
+#player[style*="Player_Run.png"],
+#player[style*="Player_Jump.png"],
+#player[style*="Player_Fall.png"],
+#player[style*="Player_atk.png"] {
+    width: 140px;
+    height: 160px;
+}
 
 #floor {
     position: absolute;
@@ -102,6 +106,20 @@ body {
     border: 2px solid white;
 }
 
+#gameOverScreen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    font-size: 24px;
+    z-index: 999;
+}
+
 #life-bar {
     position: absolute;
     top: 10px;
@@ -120,4 +138,5 @@ body {
 .enemy.attacking {
   background-image: url('Resources/enemy1_atk.png');
 }
+
 
