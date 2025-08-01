@@ -6,9 +6,16 @@ const stage = document.getElementById('stage');
 const keysPressed = {};
 
 player.style.backgroundImage = "url('Resources/Player.png')";
-enemy1.style.backgroundImage = "url('Resources/trigger (2).png')";
+enemy1.style.backgroundImage = "url('Resources/Ayllu_Idle.png')";
 enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
 
+let introText = `En tiempos ancestrales, antes de que el tiempo se midiera y los pueblos tuvieran nombre,
+la tierra del actual Ecuador era habitada por culturas sabias y guerreras.
+Sus conocimientos se transmitían por generaciones... hasta hoy.`;
+let formattedText = introText; 
+
+let currentChar = 0;
+let writingInterval = null;
 let playerX = 0;
 let playerY = 100;
 let velocityY = 0;
@@ -16,7 +23,7 @@ let isJumping = false;
 let isAttacking = false;
 let talkedToNPC = false;
 let canDamageEnemy2 = true;
-
+let enemy2Defeated = false;
 
 let enemyX = 600;
 let enemyY = 120;
@@ -27,10 +34,8 @@ let triggerY = 100;
 let enemy2X = 900;
 let enemy2Y = 100;
 let enemy2Lives = 6;
-
-let scene = 1;
+scene = null;
 let transitioning = false;
-
 let playerLives = 4;
 
 const gravity = 0.6;
@@ -46,14 +51,32 @@ document.addEventListener('keyup', e => keysPressed[e.key] = false);
 document.addEventListener('keydown', (e) => {
     keysPressed[e.key] = true;
 
-    if ((e.key === 'a' || e.key === 'A')) {
-        handlePlayerAttack(); 
+    if (scene === 0 && e.key.toLowerCase() === 'b') {
+        document.getElementById('introScene').style.display = 'none';
+        scene = 1;
+        talkedToNPC = false;
+        for (let key in keysPressed) {
+            keysPressed[key] = false;
+        }
+        return;
     }
 
-    if (e.key === 'b' || e.key === 'B') {
-        checkNPCInteraction(); 
+    if (scene === 0 && e.key.toLowerCase() === 'b') {
+        document.getElementById('introScene').style.display = 'none';
+        scene = 1;
+        talkedToNPC = false;
+        for (let key in keysPressed) {
+            keysPressed[key] = false;
+        }
+        return;
+    }
+
+    if (scene !== 0) {
+        if ((e.key === 'a' || e.key === 'A')) handlePlayerAttack();
+        if ((e.key === 'b' || e.key === 'B')) checkNPCInteraction();
     }
 });
+
 
 
 function updateCharacterPosition(el, x, y) {
@@ -217,6 +240,7 @@ function checkPlayerAttackHitsEnemy() {
 
         if (enemy2Lives <= 0) {
             enemy2.style.display = 'none';
+            enemy2Defeated = true;
             showDialogue("¡Has vencido al enemigo!");
         }
     }
@@ -252,6 +276,31 @@ function startScene2() {
     document.getElementById("background").style.backgroundImage = "url('Resources/BackGround.png')";
 }
 
+function startIntroScene() {
+    const introDiv = document.getElementById('introText');
+    const continuePrompt = document.getElementById('continuePrompt');
+
+    introDiv.innerHTML = ""; // limpiar texto
+    continuePrompt.style.display = 'none';
+    currentChar = 0;
+
+    writingInterval = setInterval(() => {
+        if (currentChar < introText.length) {
+            let charToAdd = introText[currentChar];
+            if (charToAdd === '\n') {
+                introDiv.innerHTML += '<br>';
+            } else {
+                introDiv.innerHTML += charToAdd;
+            }
+            currentChar++;
+        } else {
+            clearInterval(writingInterval);
+            continuePrompt.style.display = 'block';
+        }
+    }, 40);
+}
+
+
 function gameLoop() {
     movePlayer();
     checkNPCInteraction(); 
@@ -262,8 +311,6 @@ function gameLoop() {
 }
 
 
-document.getElementById("background").style.backgroundImage = "url('Resources/Background1.png')";
-gameLoop();
 
 function showDialogue(text) {
     if (!document.getElementById('dialogueBox')) {
@@ -291,20 +338,32 @@ function hideDialogue() {
 }
 
 setInterval(() => {
-    if (scene === 2 && playerLives > 0) {
+    if (scene === 2 && playerLives > 0 && !enemy2Defeated) {
         const dx = Math.abs(playerX - enemy2X);
         const dy = Math.abs(playerY - enemy2Y);
 
-        // Distancia suficiente para hacer daño 
         if (dx < 100 && dy < 100) {
             playerLives--;
             updateLifeBar();
 
             enemy2.style.backgroundImage = "url('Resources/enemy1_atk.png')";
-
             setTimeout(() => {
                 enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
-            }, 500); // medio segundo después vuelve a idle
+            }, 500);
         }
     }
 }, 1000);
+
+document.getElementById("playButton").addEventListener("click", () => {
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("introScene").style.display = "flex";
+    scene = 0;  
+    startIntroScene(); 
+    gameLoop();
+});
+
+
+document.getElementById("exitButton").addEventListener("click", () => {
+  window.close(); // puede no funcionar en todos los navegadores
+  alert("Gracias por visitar RUNA PACHAWAN");
+});
