@@ -41,15 +41,20 @@ body {
     z-index: 2; 
 }
 
+#enemy2 {
+    width: 250px;
+    height: 150px;  
+}
+
+
 #player {
     width: 100px;
     height: 150px;
     bottom: 90px;
 }
-#player.grande {
-  transform: scale(2.5);
+#player[style*="Player_Run.png"] {
+    background-size: 130% auto;
 }
-
 
 
 #floor {
@@ -96,3 +101,23 @@ body {
     font-size: 18px;
     border: 2px solid white;
 }
+
+#life-bar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 99;
+}
+
+#life-bar img {
+    width: 150px;
+    height: auto;
+}
+
+.enemy.idle {
+  background-image: url('Resources/enemy1_idle.png');
+}
+.enemy.attacking {
+  background-image: url('Resources/enemy1_atk.png');
+}
+
