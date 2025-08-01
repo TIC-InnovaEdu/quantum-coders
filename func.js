@@ -15,6 +15,8 @@ let velocityY = 0;
 let isJumping = false;
 let isAttacking = false;
 let talkedToNPC = false;
+let canDamageEnemy2 = true;
+
 
 let enemyX = 600;
 let enemyY = 120;
@@ -24,7 +26,7 @@ let triggerY = 100;
 
 let enemy2X = 900;
 let enemy2Y = 100;
-let enemy2Lives = 3;
+let enemy2Lives = 6;
 
 let scene = 1;
 let transitioning = false;
@@ -33,6 +35,9 @@ let playerLives = 4;
 
 const gravity = 0.6;
 const groundLevel = 100;
+const stageWidth = 2000; 
+const playerWidth = 100;
+const containerWidth = window.innerWidth;
 
 
 // Eventos de teclado
@@ -145,6 +150,8 @@ function movePlayer() {
         isJumping = true;
     }
 
+    // Limitar movimiento al escenario
+    playerX = Math.max(0, Math.min(playerX, stageWidth - playerWidth));
     applyGravity();
 
     // Cambiar sprite según estado
@@ -184,7 +191,7 @@ function handlePlayerAttack() {
 
 
 function checkPlayerAttackHitsEnemy() {
-    if (!isAttacking || scene !== 2) return;
+    if (!isAttacking || scene !== 2 || !canDamageEnemy2) return;
 
     const playerRect = player.getBoundingClientRect();
     const enemyRect = enemy2.getBoundingClientRect();
@@ -194,13 +201,19 @@ function checkPlayerAttackHitsEnemy() {
                       playerRect.bottom < enemyRect.top ||
                       playerRect.top > enemyRect.bottom);
 
-    if (overlap) {
+    if (overlap && enemy2Lives > 0) {
         enemy2Lives--;
+        canDamageEnemy2 = false; // prevenir más daño hasta que se reinicie
+
         enemy2.style.backgroundImage = "url('Resources/enemy1_atk.png')";
 
         setTimeout(() => {
             enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
         }, 300);
+
+        setTimeout(() => {
+            canDamageEnemy2 = true; // permitir volver a hacer daño
+        }, 500);
 
         if (enemy2Lives <= 0) {
             enemy2.style.display = 'none';
@@ -208,6 +221,8 @@ function checkPlayerAttackHitsEnemy() {
         }
     }
 }
+
+
 
 
 
@@ -293,4 +308,3 @@ setInterval(() => {
         }
     }
 }, 1000);
-
