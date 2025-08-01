@@ -7,6 +7,19 @@
     <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
+    <div id="menu" class="fullscreen">
+        <h1 id="gameTitle">RUNA PACHAWAN</h1>
+        <div class="menu-options">
+            <button id="playButton">Jugar</button>
+            <button id="exitButton">Salir</button>
+        </div>
+        <div class="controls">
+            <h3>Controles:</h3>
+            <p>🡆 🡄 🡅 🡇 - Moverse</p>
+            <p>A - Atacar</p>
+            <p>B - Interactuar</p>
+        </div>
+    </div>
     <div id="game-container">
         <div class="background" id="background"></div>
         <div id="stage">
@@ -26,12 +39,10 @@
             </div>
         </div>
     </div>
-
-    <script src="func.js"></script>
-</body>
-</html>
-
-
+    <div id="introScene">
+        <div id="introText"></div>
+        <div id="continuePrompt" style="display: none;">Presiona 'B' para continuar</div>
+    </div>
     <script src="func.js"></script>
 </body>
 </html>
