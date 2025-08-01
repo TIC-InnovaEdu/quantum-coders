@@ -7,7 +7,7 @@ const keysPressed = {};
 
 player.style.backgroundImage = "url('Resources/Player.png')";
 enemy1.style.backgroundImage = "url('Resources/trigger (2).png')";
-enemy2.style.backgroundImage = "url('Resources/enemy2.png')";
+enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
 
 let playerX = 0;
 let playerY = 100;
@@ -25,6 +25,8 @@ let enemy2Y = 100;
 
 let scene = 1;
 let transitioning = false;
+
+let playerLives = 4;
 
 const gravity = 0.6;
 const groundLevel = 100;
@@ -62,6 +64,23 @@ function applyGravity() {
     }
 }
 
+function updateLifeBar() {
+    const lifeImage = document.getElementById('lifeImage');
+    if (playerLives >= 4) {
+        lifeImage.src = 'Resources/vida4.png';
+    } else if (playerLives === 3) {
+        lifeImage.src = 'Resources/vida3.png';
+    } else if (playerLives === 2) {
+        lifeImage.src = 'Resources/vida2.png';
+    } else if (playerLives === 1) {
+        lifeImage.src = 'Resources/vida1.png';
+    }
+    if (playerLives === 1) {
+    showDialogue("¡Has perdido todas tus vidas!");
+    
+    }
+}
+
 function movePlayer() {
     const speed = 5;
     let moving = false;
@@ -96,7 +115,6 @@ function movePlayer() {
         }
     } else if (moving) {
         player.style.backgroundImage = "url('Resources/Player_Run.png')";
-        player.classList.add("grande");
     } else {
         player.style.backgroundImage = "url('Resources/Player_Idle.png')";
     }
@@ -162,4 +180,23 @@ function hideDialogue() {
     const box = document.getElementById('dialogueBox');
     if (box) box.remove();
 }
+
+setInterval(() => {
+    if (scene === 2 && playerLives > 0) {
+        const dx = Math.abs(playerX - enemy2X);
+        const dy = Math.abs(playerY - enemy2Y);
+
+        // Distancia suficiente para hacer daño 
+        if (dx < 100 && dy < 100) {
+            playerLives--;
+            updateLifeBar();
+
+            enemy2.style.backgroundImage = "url('Resources/enemy1_atk.png')";
+
+            setTimeout(() => {
+                enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
+            }, 500); // medio segundo después vuelve a idle
+        }
+    }
+}, 1000);
 
