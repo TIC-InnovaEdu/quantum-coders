@@ -13,6 +13,8 @@ let playerX = 0;
 let playerY = 100;
 let velocityY = 0;
 let isJumping = false;
+let isAttacking = false;
+let talkedToNPC = false;
 
 let enemyX = 600;
 let enemyY = 120;
@@ -22,6 +24,7 @@ let triggerY = 100;
 
 let enemy2X = 900;
 let enemy2Y = 100;
+let enemy2Lives = 3;
 
 let scene = 1;
 let transitioning = false;
@@ -33,8 +36,20 @@ const groundLevel = 100;
 
 
 // Eventos de teclado
-document.addEventListener('keydown', e => keysPressed[e.key] = true);
 document.addEventListener('keyup', e => keysPressed[e.key] = false);
+
+document.addEventListener('keydown', (e) => {
+    keysPressed[e.key] = true;
+
+    if ((e.key === 'a' || e.key === 'A')) {
+        handlePlayerAttack(); 
+    }
+
+    if (e.key === 'b' || e.key === 'B') {
+        checkNPCInteraction(); 
+    }
+});
+
 
 function updateCharacterPosition(el, x, y) {
     el.style.left = `${x}px`;
@@ -64,6 +79,23 @@ function applyGravity() {
     }
 }
 
+function checkNPCInteraction() {
+    const playerRect = player.getBoundingClientRect();
+    const npcRect = enemy1.getBoundingClientRect();
+
+    const near = !(playerRect.right < npcRect.left - 20 ||
+                   playerRect.left > npcRect.right + 20 ||
+                   playerRect.bottom < npcRect.top - 20 ||
+                   playerRect.top > npcRect.bottom + 20);
+
+    if (near && keysPressed['b'] && !talkedToNPC) {
+        showDialogue("¡Bienvenido, guerrero! Puedes continuar...");
+        talkedToNPC = true;
+        setTimeout(hideDialogue, 3000);
+    }
+}
+
+
 function updateLifeBar() {
     const lifeImage = document.getElementById('lifeImage');
     if (playerLives >= 4) {
@@ -75,11 +107,20 @@ function updateLifeBar() {
     } else if (playerLives === 1) {
         lifeImage.src = 'Resources/vida1.png';
     }
-    if (playerLives === 1) {
-    showDialogue("¡Has perdido todas tus vidas!");
-    
+
+    if (playerLives <= 0) {
+        showGameOver();
     }
 }
+
+
+function showGameOver() {
+    document.getElementById('gameOverScreen').style.display = 'block';
+    setTimeout(() => {
+        location.reload(); 
+    }, 3000);
+}
+
 
 function movePlayer() {
     const speed = 5;
@@ -107,22 +148,71 @@ function movePlayer() {
     applyGravity();
 
     // Cambiar sprite según estado
-    if (isJumping) {
-        if (velocityY > 0) {
-            player.style.backgroundImage = "url('Resources/Player_Jump.png')";
+    if (!isAttacking) {
+        if (isJumping) {
+            player.style.backgroundImage = velocityY > 0 
+                ? "url('Resources/Player_Jump.png')" 
+                : "url('Resources/Player_Fall.png')";
+        } else if (moving) {
+            player.style.backgroundImage = "url('Resources/Player_Run.png')";
         } else {
-            player.style.backgroundImage = "url('Resources/Player_Fall.png')";
+            player.style.backgroundImage = "url('Resources/Player_Idle.png')";
         }
-    } else if (moving) {
-        player.style.backgroundImage = "url('Resources/Player_Run.png')";
-    } else {
-        player.style.backgroundImage = "url('Resources/Player_Idle.png')";
+    }
+}
+
+function handlePlayerAttack() {
+    if (!isAttacking) {
+        isAttacking = true;
+        player.style.backgroundImage = "url('Resources/Player_atk.png')";
+
+        setTimeout(() => {
+            isAttacking = false;
+        
+            if (isJumping) {
+                player.style.backgroundImage = velocityY > 0 
+                    ? "url('Resources/Player_Jump.png')" 
+                    : "url('Resources/Player_Fall.png')";
+            } else if (keysPressed['ArrowLeft'] || keysPressed['ArrowRight']) {
+                player.style.backgroundImage = "url('Resources/Player_Run.png')";
+            } else {
+                player.style.backgroundImage = "url('Resources/Player_Idle.png')";
+            }
+        }, 400); 
     }
 }
 
 
+function checkPlayerAttackHitsEnemy() {
+    if (!isAttacking || scene !== 2) return;
+
+    const playerRect = player.getBoundingClientRect();
+    const enemyRect = enemy2.getBoundingClientRect();
+
+    const overlap = !(playerRect.right < enemyRect.left ||
+                      playerRect.left > enemyRect.right ||
+                      playerRect.bottom < enemyRect.top ||
+                      playerRect.top > enemyRect.bottom);
+
+    if (overlap) {
+        enemy2Lives--;
+        enemy2.style.backgroundImage = "url('Resources/enemy1_atk.png')";
+
+        setTimeout(() => {
+            enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
+        }, 300);
+
+        if (enemy2Lives <= 0) {
+            enemy2.style.display = 'none';
+            showDialogue("¡Has vencido al enemigo!");
+        }
+    }
+}
+
+
+
 function checkTriggerCollision() {
-    if (playerX > triggerX && !transitioning) {
+    if (playerX > triggerX && !transitioning && talkedToNPC) {
         transitioning = true;
         showDialogue("Pasando a la siguiente zona...");
         setTimeout(() => {
@@ -130,6 +220,7 @@ function checkTriggerCollision() {
         }, 1000);
     }
 }
+
 
 function startScene2() {
     hideDialogue();
@@ -148,10 +239,13 @@ function startScene2() {
 
 function gameLoop() {
     movePlayer();
+    checkNPCInteraction(); 
     if (scene === 1) checkTriggerCollision();
     updatePositions();
+    checkPlayerAttackHitsEnemy(); 
     requestAnimationFrame(gameLoop);
 }
+
 
 document.getElementById("background").style.backgroundImage = "url('Resources/Background1.png')";
 gameLoop();
