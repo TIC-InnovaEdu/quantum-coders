@@ -4,22 +4,28 @@ const trigger = document.getElementById('trigger1');
 const puma = document.getElementById('puma');
 const stage = document.getElementById('stage');
 const keysPressed = {};
+const feathers = [];
+let currentPhase = 1;
+let lastAttackTime = 0;
+let attacksInCurrentPhase = 0;
 
+
+// Constantes del juego
 const gravity = 0.5;
 const groundLevel = 100;
 const stageWidth = 2000; 
 const playerWidth = 100;
 const containerWidth = window.innerWidth;
 
+// Inicialización de sprites
 player.style.backgroundImage = "url('Resources/Player_idle.png')";
 ayllu.style.backgroundImage = "url('Resources/Totems/Ayllu_Idle.png')";
 puma.style.backgroundImage = "url('Resources/panther_idle.png')";
 
+// Variables del juego
 let introText = `En tiempos ancestrales, antes de que el tiempo se midiera y los pueblos tuvieran nombre,
 la tierra del actual Ecuador era habitada por culturas sabias y guerreras.
 Sus conocimientos se transmitían por generaciones... hasta hoy.`;
-let formattedText = introText; 
-
 let currentChar = 0;
 let writingInterval = null;
 let playerX = 0;
@@ -30,27 +36,34 @@ let isAttacking = false;
 let talkedToNPC = false;
 let canDamagepuma = true;
 let pumaDefeated = false;
-
-let enemyX = 600;
-let enemyY = 120;
-
+let aylluX = 600;
+let aylluY = 120;
 let triggerX = 900;
 let triggerY = 100;
 
-
-//Puma IA basica
-let pumaDirection = 1; // 1 = derecha, -1 = izquierda
+// Variables del puma
+let pumaDirection = 1;
 let pumaSpeed = 2;
 let isPumaAttacking = false;
 let pumaAttackCooldown = 0;
 let pumaX = 900;
 let pumaY = groundLevel;
 let pumaLives = 6;
-scene = null;
+
+// Variables generales
+let scene = null;
 let transitioning = false;
 let playerLives = 4;
 
-
+// Variables del águila
+let eagleX = 700;
+let eagleY = 200;
+let eagleState = "idle";
+let eagleHitsLanded = 0;
+let isEagleDown = false;
+let eagleAttackCooldown = 0;
+let appleSpawnTimer = 0;
+const apples = [];
 
 
 // Eventos de teclado
@@ -73,9 +86,9 @@ document.addEventListener('keydown', (e) => {
         if ((e.key === 'a' || e.key === 'A')) handlePlayerAttack();
         if ((e.key === 'b' || e.key === 'B')) checkNPCInteraction();
         if (e.key === 'ArrowDown' && isOnPlatform()) {
-        playerY -= 5; // Bajar un poco
-        isJumping = true; // Permitir caída libre
-        return; // Evitar otros movimientos
+            playerY -= 5;
+            isJumping = true;
+            return;
         }
     }
 });
@@ -90,10 +103,12 @@ function updateCharacterPosition(el, x, y) {
 function updatePositions() {
     updateCharacterPosition(player, playerX, playerY);
     if (scene === 1) {
-        updateCharacterPosition(ayllu, enemyX, enemyY);
+        updateCharacterPosition(ayllu,aylluX,aylluY);
         updateCharacterPosition(trigger, triggerX, triggerY);
     } else if (scene === 2) {
         updateCharacterPosition(puma, pumaX, pumaY);
+    } else if (scene === 3) {
+        updateCharacterPosition(document.getElementById('eagle'), eagleX, eagleY);
     }
 }
 
@@ -102,10 +117,10 @@ function applyGravity() {
     playerY += velocityY;
 
     const platforms = scene === 3
-    ? document.querySelectorAll('.platforms-scene-3 .platform')
-    : scene === 2
-    ? document.querySelectorAll('.platforms-scene-2 .platform')
-    : document.querySelectorAll('.platforms-scene-1 .platform');
+        ? document.querySelectorAll('.platforms-scene-3 .platform')
+        : scene === 2
+        ? document.querySelectorAll('.platforms-scene-2 .platform')
+        : document.querySelectorAll('.platforms-scene-1 .platform');
     
     let landedOnPlatform = false;
 
@@ -127,7 +142,6 @@ function applyGravity() {
         }
     }
 
-    // Si no aterrizó en una plataforma, revisamos el suelo
     if (!landedOnPlatform) {
         if (playerY <= groundLevel) {
             playerY = groundLevel;
@@ -211,6 +225,30 @@ function checkWallCollision() {
     return false;
 }
 
+function checkFeatherCollision() {
+    const playerRect = player.getBoundingClientRect();
+    
+    for (let i = feathers.length - 1; i >= 0; i--) {
+        const feather = feathers[i];
+        const featherRect = feather.element.getBoundingClientRect();
+        
+        if (playerRect.right > featherRect.left && 
+            playerRect.left < featherRect.right &&
+            playerRect.bottom > featherRect.top &&
+            playerRect.top < featherRect.bottom) {
+            
+            playerLives--;
+            updateLifeBar();
+            feather.element.remove();
+            feathers.splice(i, 1);
+            
+            // Efecto de daño
+            player.style.filter = "brightness(1.5)";
+            setTimeout(() => player.style.filter = "none", 200);
+        }
+    }
+}
+
 function checkNPCInteraction() {
     const playerRect = player.getBoundingClientRect();
     const npcRect = ayllu.getBoundingClientRect();
@@ -230,6 +268,24 @@ function checkNPCInteraction() {
 
 function updateLifeBar() {
     const lifeImage = document.getElementById('lifeImage');
+    const lifeContainer = document.getElementById('life-bar');
+    
+    // Crear contenedor si no existe
+    if (!lifeContainer) {
+        const newLifeContainer = document.createElement('div');
+        newLifeContainer.id = 'life-bar';
+        newLifeContainer.style.position = 'absolute';
+        newLifeContainer.style.top = '10px';
+        newLifeContainer.style.left = '10px';
+        newLifeContainer.style.zIndex = '100';
+        document.body.appendChild(newLifeContainer);
+        
+        const img = document.createElement('img');
+        img.id = 'lifeImage';
+        newLifeContainer.appendChild(img);
+    }
+    
+    // Actualizar imagen según vidas
     if (playerLives >= 4) {
         lifeImage.src = 'Resources/vida4.png';
     } else if (playerLives === 3) {
@@ -238,12 +294,11 @@ function updateLifeBar() {
         lifeImage.src = 'Resources/vida2.png';
     } else if (playerLives === 1) {
         lifeImage.src = 'Resources/vida1.png';
-    }
-
-    if (playerLives <= 0) {
+    } else {
         showGameOver();
     }
 }
+
 
 
 function showGameOver() {
@@ -296,7 +351,6 @@ function movePlayer() {
         playerX = prevX;
     }
 
-    // Saltar
     if (keysPressed['ArrowUp'] && (!isJumping || isOnPlatform())) {
         velocityY = 15;
         isJumping = true;
@@ -328,7 +382,6 @@ function movePuma() {
     const walls = document.querySelectorAll('.blocker-wall, .blocker');
     const pumaWidth = 180;
     
-    // Limitar movimiento y cambiar dirección
     if (pumaX <= 0) {
         pumaX = 0;
         pumaDirection = 1;
@@ -343,7 +396,6 @@ function movePuma() {
         return;
     }
     
-    // Verificar colisión con paredes
     let willCollide = false;
     for (const wall of walls) {
         const wallRect = wall.getBoundingClientRect();
@@ -364,7 +416,6 @@ function movePuma() {
         }
     }
     
-    // Cambiar dirección si hay colisión
     if (willCollide) {
         pumaDirection *= -1;
         if (pumaDirection > 0) {
@@ -377,7 +428,6 @@ function movePuma() {
         return;
     }
     
-    // Comportamiento de ataque
     const playerRect = player.getBoundingClientRect();
     if (Math.abs(playerRect.left - pumaRect.left) < 150 && 
         Math.abs(playerRect.bottom - pumaRect.bottom) < 50) {
@@ -391,12 +441,230 @@ function movePuma() {
         return;
     }
     
-    // Movimiento normal
     if (!isPumaAttacking) {
         pumaX += pumaSpeed * pumaDirection;
         updateCharacterPosition(puma, pumaX, pumaY);
     }
 }
+
+function moveEagleBoss() {
+    const eagle = document.getElementById('eagle');
+    if (!eagle) return;
+
+    // Actualizar plumas
+    for (let i = feathers.length - 1; i >= 0; i--) {
+        if (feathers[i].update()) {
+            feathers.splice(i, 1);
+        }
+    }
+
+    // Máquina de estados
+    switch(eagleState) {
+        case "idle":
+            eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
+            eagleX += Math.sin(Date.now()/500) * 3;
+            
+            // Ataque basado en fase
+            const now = Date.now();
+            if (now - lastAttackTime > 2000) { // 2 segundos entre ataques
+                lastAttackTime = now;
+                startAttackSequence();
+            }
+            break;
+            
+        case "charging":
+            if (Date.now() - lastAttackTime > 1000) { // 1 segundo de carga
+                launchFeatherAttack();
+                eagleState = "attacking";
+                lastAttackTime = Date.now();
+            }
+            break;
+            
+        case "attacking":
+            if (Date.now() - lastAttackTime > 1500) { // 1.5 segundos de ataque
+                if (attacksInCurrentPhase >= getAttacksForPhase()) {
+                    eagleState = "diving";
+                } else {
+                    eagleState = "idle";
+                }
+                lastAttackTime = Date.now();
+            }
+            break;
+            
+        case "diving":
+            // Embestida
+            const targetX = playerX;
+            const dx = targetX - eagleX;
+            eagleX += dx * 0.1;
+            eagleY += 10;
+            
+            if (eagleY >= groundLevel - 30) {
+                eagleState = "vulnerable";
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_vulnerable.png')";
+                isEagleDown = true;
+                setTimeout(resetEagle, 4000); // 4 segundos vulnerable
+            }
+            break;
+            
+        case "vulnerable":
+            // Esperar a que termine el tiempo de vulnerabilidad
+            break;
+    }
+    
+    updateCharacterPosition(eagle, eagleX, eagleY);
+}
+
+function startAttackSequence() {
+    eagleState = "charging";
+    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
+    attacksInCurrentPhase++;
+}
+
+function launchFeatherAttack() {
+    const featherCount = currentPhase === 1 ? 5 : currentPhase === 2 ? 7 : 9;
+    const spread = currentPhase === 1 ? Math.PI/3 : currentPhase === 2 ? Math.PI/2 : Math.PI;
+    
+    for (let i = 0; i < featherCount; i++) {
+        const angle = -Math.PI/2 - spread/2 + (spread/(featherCount-1)) * i;
+        feathers.push(new Feather(
+            eagleX + 100, 
+            eagleY + 50,
+            angle
+        ));
+    }
+}
+
+function getAttacksForPhase() {
+    return currentPhase === 1 ? 2 : currentPhase === 2 ? 4 : 6;
+}
+
+function resetEagle() {
+    const eagle = document.getElementById('eagle');
+    eagleState = "idle";
+    isEagleDown = false;
+    eagleY = 200;
+    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
+    
+    // Cambiar fase si se completaron los golpes
+    if (eagleHitsLanded >= 3) {
+        currentPhase = Math.min(3, currentPhase + 1);
+        eagleHitsLanded = 0;
+        attacksInCurrentPhase = 0;
+    }
+}
+
+function checkEagleHit() {
+    // Solo verificar si el águila está vulnerable y el jugador está atacando
+    if (eagleState !== "vulnerable" || !isAttacking) return;
+    
+    const eagleRect = document.getElementById('eagle').getBoundingClientRect();
+    const playerRect = player.getBoundingClientRect();
+    
+    // Área de golpe más generosa
+    const hitArea = {
+        left: player.style.transform === "scaleX(1)" 
+            ? playerRect.left - 40 
+            : playerRect.right - 60,
+        right: player.style.transform === "scaleX(1)" 
+            ? playerRect.left + 60 
+            : playerRect.right + 40
+    };
+    
+    const overlap = !(
+        hitArea.right < eagleRect.left ||
+        hitArea.left > eagleRect.right ||
+        playerRect.bottom < eagleRect.top ||
+        playerRect.top > eagleRect.bottom
+    );
+
+    if (overlap) {
+        // Efecto visual
+        const eagle = document.getElementById('eagle');
+        eagle.style.filter = "brightness(2)";
+        setTimeout(() => eagle.style.filter = "brightness(1)", 200);
+        
+        eagleHitsLanded++;
+        console.log(`Golpe al águila! Hits: ${eagleHitsLanded}`);
+        
+        if (eagleHitsLanded >= 3) {
+            // Victoria
+            document.getElementById('eagle').style.display = 'none';
+            showDialogue("¡Has derrotado al Águila Sagrada!");
+        } else {
+            // Reiniciar después del golpe
+            setTimeout(resetEagle, 800);
+            
+            // 50% de probabilidad de generar manzana
+            if (Math.random() < 0.5) spawnApple();
+        }
+        
+        isEagleDown = false;
+    }
+}
+
+
+// Sistema de manzanas (corregido)
+function spawnApple() {
+    // Verificar que la ruta sea correcta
+    const appleImagePath = 'Resources/Items/apple.png';
+    console.log("Intentando cargar manzana desde:", appleImagePath);
+    
+    const apple = document.createElement('div');
+    apple.className = 'health-item';
+    apple.style.backgroundImage = `url('${appleImagePath}')`;
+    
+    // Posición más accesible
+    const x = 200 + Math.random() * (stageWidth - 400);
+    const y = groundLevel + 50; // Más arriba para mejor visibilidad
+    
+    apple.style.left = `${x}px`;
+    apple.style.bottom = `${y}px`;
+    apple.style.width = '40px';
+    apple.style.height = '40px';
+    apple.style.position = 'absolute';
+    apple.style.backgroundSize = 'contain';
+    apple.style.backgroundRepeat = 'no-repeat';
+    
+    document.getElementById('stage').appendChild(apple);
+    
+    apples.push({
+        element: apple,
+        x: x,
+        y: y,
+        collected: false
+    });
+}
+
+
+function checkAppleCollection() {
+    const playerRect = player.getBoundingClientRect();
+    
+    for (let i = apples.length - 1; i >= 0; i--) {
+        if (apples[i].collected) continue;
+        
+        const appleRect = apples[i].element.getBoundingClientRect();
+        
+        if (playerRect.right > appleRect.left + 20 && 
+            playerRect.left < appleRect.right - 20 &&
+            playerRect.bottom > appleRect.top + 20 &&
+            playerRect.top < appleRect.bottom - 20) {
+            
+            playerLives = Math.min(4, playerLives + 2);
+            updateLifeBar();
+            console.log(`Manzana recolectada! Vidas: ${playerLives}`);
+            
+            apples[i].element.style.transform = "scale(1.5)";
+            apples[i].element.style.opacity = "0";
+            setTimeout(() => {
+                apples[i].element.remove();
+            }, 300);
+            
+            apples[i].collected = true;
+            apples.splice(i, 1);
+        }
+    }
+}
+
 
 function handlePlayerAttack() {
     if (!isAttacking) {
@@ -424,17 +692,24 @@ function checkPlayerAttackHitsEnemy() {
     if (!isAttacking || scene !== 2 || !canDamagepuma || pumaDefeated) return;
 
     const playerRect = player.getBoundingClientRect();
-    const enemyRect = puma.getBoundingClientRect();
+    const pumaRect = puma.getBoundingClientRect();
 
-    const attackRange = player.style.transform === "scaleX(1)"
-        ? { left: playerRect.left - 30, right: playerRect.left + 50 }
-        : { left: playerRect.right - 50, right: playerRect.right + 30 };
+    // Definir el rango de ataque basado en la dirección del jugador
+    const attackRange = {
+        left: player.style.transform === "scaleX(1)" 
+            ? playerRect.left - 30 
+            : playerRect.right - 80,
+        right: player.style.transform === "scaleX(1)" 
+            ? playerRect.left + 50 
+            : playerRect.right + 30
+    };
 
+    // Verificar superposición
     const overlap = !(
-        attackRange.right < enemyRect.left ||
-        attackRange.left > enemyRect.right ||
-        playerRect.bottom < enemyRect.top ||
-        playerRect.top > enemyRect.bottom
+        attackRange.right < pumaRect.left ||
+        attackRange.left > pumaRect.right ||
+        playerRect.bottom < pumaRect.top ||
+        playerRect.top > pumaRect.bottom
     );
 
     if (overlap && pumaLives > 0) {
@@ -442,8 +717,11 @@ function checkPlayerAttackHitsEnemy() {
         canDamagepuma = false;
 
         // Efecto visual de daño
-        puma.style.opacity = '0.5';
-        setTimeout(() => puma.style.opacity = '1', 100);
+        puma.style.filter = "brightness(2)";
+        setTimeout(() => puma.style.filter = "brightness(1)", 200);
+
+        // Mostrar vidas restantes en consola (para debug)
+        console.log(`Puma golpeado! Vidas restantes: ${pumaLives}`);
 
         if (pumaLives <= 0) {
             pumaDefeated = true;
@@ -451,7 +729,6 @@ function checkPlayerAttackHitsEnemy() {
 
             showDialogue("¡Has vencido al enemigo!");
 
-            // Transición a escena 3 después de mostrar mensaje
             setTimeout(() => {
                 showDialogue("¡Prepárate para el combate final!");
                 setTimeout(() => {
@@ -460,7 +737,6 @@ function checkPlayerAttackHitsEnemy() {
                 }, 3000);
             }, 2000);
         } else {
-            // Solo si no murió, permitir daño de nuevo
             setTimeout(() => {
                 canDamagepuma = true;
             }, 500);
@@ -548,30 +824,97 @@ function startScene3() {
     scene = 3;
     transitioning = false;
 
-    // Mostrar elementos escena 3
+    // Mostrar elementos
+    document.getElementById('eagleBoss').style.display = 'block';
     document.querySelector('.platforms-scene-3').style.display = 'block';
     
-    // Ocultar elementos de otras escenas
+    // Ocultar elementos
     document.querySelector('.platforms-scene-2').style.display = 'none';
     puma.style.display = 'none';
 
-    // Cambiar fondo
-    document.getElementById("background").style.backgroundImage = "url('Resources/Background2.png')";
+    // Resetear estado del águila
+    eagleHitsLanded = 0;
+    isEagleDown = false;
+    eagleState = "idle";
+    eagleX = 700;
+    eagleY = 200;
+    eagleAttackCooldown = 120;
     
-    // Resetear posición del jugador
+    // Posición jugador
     playerX = 100;
     playerY = groundLevel + 5;
+    
     updateCharacterPosition(player, playerX, playerY);
+    updateCharacterPosition(document.getElementById('eagle'), eagleX, eagleY);
+    
+    // Fondo
+    document.getElementById("background").style.backgroundImage = "url('Resources/Background2.png')";
+    
+    // Inicializar águila
+    const eagle = document.getElementById('eagle');
+    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
+    eagle.style.display = 'block';
 }
 
+class Feather {
+    constructor(x, y, angle) {
+        this.element = document.createElement('div');
+        this.element.className = 'feather-projectile';
+        this.x = x;
+        this.y = y;
+        this.angle = angle;
+        this.speed = 5;
+        this.gravity = 0.2;
+        this.lifetime = 0;
+        this.element.style.backgroundImage = "url('Resources/First_Boss/feather.png')";
+        this.element.style.width = '32px';
+        this.element.style.height = '32px';
+        this.element.style.position = 'absolute';
+        this.element.style.transform = `rotate(${angle}rad)`;
+        stage.appendChild(this.element);
+    }
+
+    update() {
+        this.lifetime++;
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed + this.gravity * this.lifetime;
+        
+        this.element.style.left = `${this.x}px`;
+        this.element.style.bottom = `${this.y}px`;
+        
+        // Eliminar si sale de pantalla
+        if (this.y > stage.offsetHeight || this.x < 0 || this.x > stageWidth) {
+            this.element.remove();
+            return true;
+        }
+        return false;
+    }
+}
 
 function gameLoop() {
     movePlayer();
     checkNPCInteraction();
-    if (scene === 1) checkTriggerCollision();
-    if (scene === 2) movePuma(); // ← Añade esta línea
+    
+    if (scene === 1) {
+        checkTriggerCollision();
+    } else if (scene === 2) {
+        movePuma();
+        checkPlayerAttackHitsEnemy();
+    } else if (scene === 3) {
+        moveEagleBoss();
+        checkEagleHit();
+        checkAppleCollection();
+        checkFeatherCollision(); // <- Nueva función para colisión con plumas
+        
+        if (appleSpawnTimer <= 0 && apples.length < 2) {
+            if (Math.random() < 0.1) spawnApple();
+            appleSpawnTimer = 180;
+        } else {
+            appleSpawnTimer--;
+        }
+    }
+    
     updatePositions();
-    checkPlayerAttackHitsEnemy();
     requestAnimationFrame(gameLoop);
 }
 
@@ -624,6 +967,7 @@ document.getElementById("playButton").addEventListener("click", () => {
     document.getElementById("introScene").style.display = "flex";
     scene = 0;  
     startIntroScene(); 
+    updateLifeBar(); // Asegurar que la barra de vida se muestra
     gameLoop();
 });
 
