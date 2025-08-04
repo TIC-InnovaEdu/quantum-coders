@@ -101,7 +101,12 @@ function applyGravity() {
     velocityY -= gravity;
     playerY += velocityY;
 
-    const platforms = document.querySelectorAll('.platform');
+    const platforms = scene === 3
+    ? document.querySelectorAll('.platforms-scene-3 .platform')
+    : scene === 2
+    ? document.querySelectorAll('.platforms-scene-2 .platform')
+    : document.querySelectorAll('.platforms-scene-1 .platform');
+    
     let landedOnPlatform = false;
 
     for (const platform of platforms) {
@@ -249,9 +254,12 @@ function showGameOver() {
 }
 
 function isOnPlatform() {
-    const platforms = scene === 2
+    const platforms = scene === 3
+    ? document.querySelectorAll('.platforms-scene-3 .platform')
+    : scene === 2
     ? document.querySelectorAll('.platforms-scene-2 .platform')
     : document.querySelectorAll('.platforms-scene-1 .platform');
+    
     for (const platform of platforms) {
         const platformY = parseInt(platform.style.bottom);
         const platformX = parseInt(platform.style.left);
@@ -418,15 +426,16 @@ function checkPlayerAttackHitsEnemy() {
     const playerRect = player.getBoundingClientRect();
     const enemyRect = puma.getBoundingClientRect();
 
-    // Verificar si el ataque está en el rango correcto
-    const attackRange = player.style.transform === "scaleX(1)" ? 
-        { left: playerRect.left - 30, right: playerRect.left + 50 } : 
-        { left: playerRect.right - 50, right: playerRect.right + 30 };
+    const attackRange = player.style.transform === "scaleX(1)"
+        ? { left: playerRect.left - 30, right: playerRect.left + 50 }
+        : { left: playerRect.right - 50, right: playerRect.right + 30 };
 
-    const overlap = !(attackRange.right < enemyRect.left ||
-                     attackRange.left > enemyRect.right ||
-                     playerRect.bottom < enemyRect.top ||
-                     playerRect.top > enemyRect.bottom);
+    const overlap = !(
+        attackRange.right < enemyRect.left ||
+        attackRange.left > enemyRect.right ||
+        playerRect.bottom < enemyRect.top ||
+        playerRect.top > enemyRect.bottom
+    );
 
     if (overlap && pumaLives > 0) {
         pumaLives--;
@@ -439,10 +448,23 @@ function checkPlayerAttackHitsEnemy() {
         if (pumaLives <= 0) {
             pumaDefeated = true;
             puma.style.display = 'none';
-            showDialogue("¡Has vencido al enemigo!");
-        }
 
-        setTimeout(() => canDamagepuma = true, 500);
+            showDialogue("¡Has vencido al enemigo!");
+
+            // Transición a escena 3 después de mostrar mensaje
+            setTimeout(() => {
+                showDialogue("¡Prepárate para el combate final!");
+                setTimeout(() => {
+                    hideDialogue();
+                    startScene3();
+                }, 3000);
+            }, 2000);
+        } else {
+            // Solo si no murió, permitir daño de nuevo
+            setTimeout(() => {
+                canDamagepuma = true;
+            }, 500);
+        }
     }
 }
 
@@ -463,17 +485,17 @@ function startScene2() {
     scene = 2;
     transitioning = false;
 
-    // Asegurar visibilidad
+    // Mostrar elementos escena 2
     document.querySelector('.platforms-scene-2').style.display = 'block';
     puma.style.display = 'block';
-    document.querySelector('.blocker').style.display = 'block';
     
-    // Ocultar elementos de escena 1
+    // Ocultar elementos de otras escenas
+    document.querySelector('.platforms-scene-1').style.display = 'none';
     ayllu.style.display = 'none';
     trigger.style.display = 'none';
-    document.querySelector('.platforms-scene-1').style.display = 'none';
-    document.querySelector('.platforms-scene-2').style.display = 'block';
 
+    // Cambiar fondo
+    document.getElementById("background").style.backgroundImage = "url('Resources/BackGround.png')";
     // Resetear posiciones
     playerX = 50;
     playerY = groundLevel + 5;
@@ -489,6 +511,12 @@ function startScene2() {
     updateCharacterPosition(puma, pumaX, pumaY);
     
     document.getElementById("background").style.backgroundImage = "url('Resources/BackGround.png')";
+    if (pumaDefeated) {
+        setTimeout(() => {
+            showDialogue("¡Prepárate para el combate final!");
+            setTimeout(startScene3, 3000);
+        }, 2000);
+    }
 }
 
 function startIntroScene() {
@@ -513,6 +541,27 @@ function startIntroScene() {
             continuePrompt.style.display = 'block';
         }
     }, 40);
+}
+
+function startScene3() {
+    hideDialogue();
+    scene = 3;
+    transitioning = false;
+
+    // Mostrar elementos escena 3
+    document.querySelector('.platforms-scene-3').style.display = 'block';
+    
+    // Ocultar elementos de otras escenas
+    document.querySelector('.platforms-scene-2').style.display = 'none';
+    puma.style.display = 'none';
+
+    // Cambiar fondo
+    document.getElementById("background").style.backgroundImage = "url('Resources/Background2.png')";
+    
+    // Resetear posición del jugador
+    playerX = 100;
+    playerY = groundLevel + 5;
+    updateCharacterPosition(player, playerX, playerY);
 }
 
 
