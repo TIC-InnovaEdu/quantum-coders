@@ -78,7 +78,7 @@ body {
     margin: 0 auto;
 }
 
-.character, .enemy {
+.character {
     position: absolute;
     width: 180px;
     height: 220px;
@@ -88,6 +88,33 @@ body {
     background-color: transparent;
     bottom: 100px;
     z-index: 2; 
+}
+.enemy {
+    position: absolute;
+    width: 180px;
+    height: 120px; /* Reducida para ajustar mejor al sprite */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: bottom center; /* Asegura que los pies queden abajo */
+    background-color: transparent;
+    bottom: 100px; /* Igual que el groundLevel del juego */
+    z-index: 2;
+}
+
+#puma {
+    height: 100px;
+    bottom: 100px;
+    background-position: bottom;
+    transform-origin: center; /* Importante para que el flip sea correcto */
+    transition: transform 0.2s ease; /* Para un cambio suave de dirección */
+}
+
+.puma-facing-right {
+    transform: scaleX(-1); /* Voltear horizontalmente para mirar DERECHA */
+}
+
+.puma-facing-left {
+    transform: none; /* Estado natural (IZQUIERDA) */
 }
 
 #enemy2 {
@@ -203,10 +230,10 @@ body {
 }
 
 .enemy.idle {
-  background-image: url('Resources/enemy1_idle.png');
+  background-image: url('Resources/panther_idle.png');
 }
 .enemy.attacking {
-  background-image: url('Resources/enemy1_atk.png');
+  background-image: url('Resources/panther_atk.png');
 }
 
 #introScene {
@@ -245,4 +272,37 @@ body {
     50% { opacity: 0; }
 }
 
+.platform {
+    position: absolute;
+    background: #8B5E3C;
+    border: 2px solid #4e2e1f;
+    border-radius: 5px;
+    z-index: 3;
+}
 
+.blocker-wall {
+    position: absolute;
+    background-color: #523521;
+    border: 2px solid #3a2416;
+    z-index: 3;
+}
+
+.blocker {
+    position: absolute;
+    width: 50px;
+    height: 200px;
+    background: #523521;
+    border: 2px solid yellow; /* Borde amarillo para debug */
+    border-radius: 4px;
+    z-index: 3;
+    /* Forzar visibilidad */
+    box-shadow: 0 0 0 3px cyan;
+    background-color: rgba(0, 255, 255, 0.3) !important;
+}
+
+.companion {
+    position: absolute;
+    width: 80px;
+    height: 100px;
+    background-size: cover;
+}

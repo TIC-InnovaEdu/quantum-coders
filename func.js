@@ -1,13 +1,19 @@
 const player = document.getElementById('player');
-const enemy1 = document.getElementById('enemy1');
+const ayllu = document.getElementById('ayllu');
 const trigger = document.getElementById('trigger1');
-const enemy2 = document.getElementById('enemy2');
+const puma = document.getElementById('puma');
 const stage = document.getElementById('stage');
 const keysPressed = {};
 
-player.style.backgroundImage = "url('Resources/Player.png')";
-enemy1.style.backgroundImage = "url('Resources/Ayllu_Idle.png')";
-enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
+const gravity = 0.5;
+const groundLevel = 100;
+const stageWidth = 2000; 
+const playerWidth = 100;
+const containerWidth = window.innerWidth;
+
+player.style.backgroundImage = "url('Resources/Player_idle.png')";
+ayllu.style.backgroundImage = "url('Resources/Totems/Ayllu_Idle.png')";
+puma.style.backgroundImage = "url('Resources/panther_idle.png')";
 
 let introText = `En tiempos ancestrales, antes de que el tiempo se midiera y los pueblos tuvieran nombre,
 la tierra del actual Ecuador era habitada por culturas sabias y guerreras.
@@ -22,8 +28,8 @@ let velocityY = 0;
 let isJumping = false;
 let isAttacking = false;
 let talkedToNPC = false;
-let canDamageEnemy2 = true;
-let enemy2Defeated = false;
+let canDamagepuma = true;
+let pumaDefeated = false;
 
 let enemyX = 600;
 let enemyY = 120;
@@ -31,18 +37,20 @@ let enemyY = 120;
 let triggerX = 900;
 let triggerY = 100;
 
-let enemy2X = 900;
-let enemy2Y = 100;
-let enemy2Lives = 6;
+
+//Puma IA basica
+let pumaDirection = 1; // 1 = derecha, -1 = izquierda
+let pumaSpeed = 2;
+let isPumaAttacking = false;
+let pumaAttackCooldown = 0;
+let pumaX = 900;
+let pumaY = groundLevel;
+let pumaLives = 6;
 scene = null;
 let transitioning = false;
 let playerLives = 4;
 
-const gravity = 0.6;
-const groundLevel = 100;
-const stageWidth = 2000; 
-const playerWidth = 100;
-const containerWidth = window.innerWidth;
+
 
 
 // Eventos de teclado
@@ -61,19 +69,14 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    if (scene === 0 && e.key.toLowerCase() === 'b') {
-        document.getElementById('introScene').style.display = 'none';
-        scene = 1;
-        talkedToNPC = false;
-        for (let key in keysPressed) {
-            keysPressed[key] = false;
-        }
-        return;
-    }
-
     if (scene !== 0) {
         if ((e.key === 'a' || e.key === 'A')) handlePlayerAttack();
         if ((e.key === 'b' || e.key === 'B')) checkNPCInteraction();
+        if (e.key === 'ArrowDown' && isOnPlatform()) {
+        playerY -= 5; // Bajar un poco
+        isJumping = true; // Permitir caída libre
+        return; // Evitar otros movimientos
+        }
     }
 });
 
@@ -87,29 +90,125 @@ function updateCharacterPosition(el, x, y) {
 function updatePositions() {
     updateCharacterPosition(player, playerX, playerY);
     if (scene === 1) {
-        updateCharacterPosition(enemy1, enemyX, enemyY);
+        updateCharacterPosition(ayllu, enemyX, enemyY);
         updateCharacterPosition(trigger, triggerX, triggerY);
     } else if (scene === 2) {
-        updateCharacterPosition(enemy2, enemy2X, enemy2Y);
+        updateCharacterPosition(puma, pumaX, pumaY);
     }
 }
 
 function applyGravity() {
-    if (playerY > groundLevel || isJumping) {
-        velocityY -= gravity;
-        playerY += velocityY;
+    velocityY -= gravity;
+    playerY += velocityY;
 
+    const platforms = document.querySelectorAll('.platform');
+    let landedOnPlatform = false;
+
+    for (const platform of platforms) {
+        const platformY = parseInt(platform.style.bottom);
+        const platformX = parseInt(platform.style.left);
+        const platformWidth = platform.offsetWidth;
+
+        const isHorizontallyAligned = playerX + playerWidth > platformX && playerX < platformX + platformWidth;
+        const distanceToPlatform = (playerY + velocityY) - (platformY + 20);
+        const isFallingOntoPlatform = velocityY <= 0 && isHorizontallyAligned && distanceToPlatform <= 5 && distanceToPlatform >= -10;
+
+        if (isHorizontallyAligned && isFallingOntoPlatform) {
+            playerY = platformY + 20;
+            velocityY = 0;
+            isJumping = false;
+            landedOnPlatform = true;
+            break;
+        }
+    }
+
+    // Si no aterrizó en una plataforma, revisamos el suelo
+    if (!landedOnPlatform) {
         if (playerY <= groundLevel) {
             playerY = groundLevel;
-            isJumping = false;
             velocityY = 0;
+            isJumping = false;
+        } else {
+            isJumping = true;
         }
     }
 }
 
+
+function getCurrentPlatform() {
+    const activePlatforms = scene === 2
+    ? document.querySelectorAll('.platforms-scene-2 .platform')
+    : document.querySelectorAll('.platforms-scene-1 .platform');
+    const playerRect = player.getBoundingClientRect();
+    
+    for (const platform of platforms) {
+        const platformRect = platform.getBoundingClientRect();
+        
+        if (playerRect.right > platformRect.left + 5 && 
+            playerRect.left < platformRect.right - 5 &&
+            playerRect.bottom >= platformRect.top - 10 && 
+            playerRect.bottom <= platformRect.top + 5) {
+            return platform;
+        }
+    }
+    return null;
+}
+
+
+function checkPlatformBlockers() {
+    const blockers = document.querySelectorAll('.blocker-platform');
+    const playerRect = player.getBoundingClientRect();
+    
+    for (const blocker of blockers) {
+        const blockRect = blocker.getBoundingClientRect();
+        
+        // Solo colisionar desde abajo (para permitir saltos)
+        if (playerRect.right > blockRect.left + 5 && 
+            playerRect.left < blockRect.right - 5 &&
+            playerRect.bottom >= blockRect.top - 10 && 
+            playerRect.bottom <= blockRect.top + 5) {
+            
+            // Detener la caída
+            if (velocityY < 0) {
+                velocityY = 0;
+                playerY = blockRect.top - playerRect.height;
+                isJumping = false;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+// --- BLOQUEO CON MONTAÑAS / MUROS ---
+function checkWallCollision() {
+    const walls = document.querySelectorAll('.blocker-wall');
+    const playerRect = player.getBoundingClientRect();
+    
+    for (const wall of walls) {
+        const wallRect = wall.getBoundingClientRect();
+        
+        const collisionMargin = 5;
+        
+        if (playerRect.right > wallRect.left + collisionMargin && 
+            playerRect.left < wallRect.right - collisionMargin && 
+            playerRect.bottom > wallRect.top + collisionMargin) {
+            
+            // Ajustar posición del jugador
+            if (keysPressed['ArrowRight']) {
+                playerX = wallRect.left - playerRect.width - 2;
+            } else if (keysPressed['ArrowLeft']) {
+                playerX = wallRect.right + 2;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 function checkNPCInteraction() {
     const playerRect = player.getBoundingClientRect();
-    const npcRect = enemy1.getBoundingClientRect();
+    const npcRect = ayllu.getBoundingClientRect();
 
     const near = !(playerRect.right < npcRect.left - 20 ||
                    playerRect.left > npcRect.right + 20 ||
@@ -149,35 +248,57 @@ function showGameOver() {
     }, 3000);
 }
 
+function isOnPlatform() {
+    const platforms = scene === 2
+    ? document.querySelectorAll('.platforms-scene-2 .platform')
+    : document.querySelectorAll('.platforms-scene-1 .platform');
+    for (const platform of platforms) {
+        const platformY = parseInt(platform.style.bottom);
+        const platformX = parseInt(platform.style.left);
+        const platformWidth = platform.offsetWidth;
+
+        const isHorizontallyAligned = playerX + playerWidth > platformX && playerX < platformX + platformWidth;
+        const isVerticallyClose = Math.abs(playerY - (platformY + 20)) < 5;
+
+        if (isHorizontallyAligned && isVerticallyClose) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 function movePlayer() {
     const speed = 5;
     let moving = false;
-
-    // Movimiento horizontal
+    const prevX = playerX;
+    
     if (keysPressed['ArrowLeft']) {
         playerX -= speed;
         player.style.transform = "scaleX(1)";
         moving = true;
     }
-
     if (keysPressed['ArrowRight']) {
         playerX += speed;
         player.style.transform = "scaleX(-1)";
         moving = true;
     }
 
-    // Saltar
-    if (keysPressed[' '] && !isJumping) {
-        velocityY = 15;
-        isJumping = true;
+    if (checkWallCollision()) {
+        playerX = prevX;
     }
 
-    // Limitar movimiento al escenario
-    playerX = Math.max(0, Math.min(playerX, stageWidth - playerWidth));
+    // Saltar
+    if (keysPressed['ArrowUp'] && (!isJumping || isOnPlatform())) {
+        velocityY = 15;
+        isJumping = true;
+        player.style.backgroundImage = "url('Resources/Player_Jump.png')";
+    }
+
     applyGravity();
 
-    // Cambiar sprite según estado
+    playerX = Math.max(0, Math.min(playerX, stageWidth - playerWidth));
+
     if (!isAttacking) {
         if (isJumping) {
             player.style.backgroundImage = velocityY > 0 
@@ -188,6 +309,84 @@ function movePlayer() {
         } else {
             player.style.backgroundImage = "url('Resources/Player_Idle.png')";
         }
+    }
+}
+
+
+function movePuma() {
+    if (pumaDefeated) return;
+
+    const pumaRect = puma.getBoundingClientRect();
+    const walls = document.querySelectorAll('.blocker-wall, .blocker');
+    const pumaWidth = 180;
+    
+    // Limitar movimiento y cambiar dirección
+    if (pumaX <= 0) {
+        pumaX = 0;
+        pumaDirection = 1;
+        puma.classList.remove('puma-facing-left');
+        puma.classList.add('puma-facing-right');
+        return;
+    } else if (pumaX >= stageWidth - pumaWidth) {
+        pumaX = stageWidth - pumaWidth;
+        pumaDirection = -1;
+        puma.classList.remove('puma-facing-right');
+        puma.classList.add('puma-facing-left');
+        return;
+    }
+    
+    // Verificar colisión con paredes
+    let willCollide = false;
+    for (const wall of walls) {
+        const wallRect = wall.getBoundingClientRect();
+        
+        const nextX = pumaX + (pumaSpeed * pumaDirection);
+        const nextRect = {
+            left: nextX,
+            right: nextX + pumaWidth,
+            top: wallRect.top,
+            bottom: pumaRect.bottom
+        };
+        
+        if (nextRect.right > wallRect.left + 5 && 
+            nextRect.left < wallRect.right - 5 &&
+            nextRect.bottom > wallRect.top + 5) {
+            willCollide = true;
+            break;
+        }
+    }
+    
+    // Cambiar dirección si hay colisión
+    if (willCollide) {
+        pumaDirection *= -1;
+        if (pumaDirection > 0) {
+            puma.classList.remove('puma-facing-left');
+            puma.classList.add('puma-facing-right');
+        } else {
+            puma.classList.remove('puma-facing-right');
+            puma.classList.add('puma-facing-left');
+        }
+        return;
+    }
+    
+    // Comportamiento de ataque
+    const playerRect = player.getBoundingClientRect();
+    if (Math.abs(playerRect.left - pumaRect.left) < 150 && 
+        Math.abs(playerRect.bottom - pumaRect.bottom) < 50) {
+        isPumaAttacking = true;
+        puma.style.backgroundImage = "url('Resources/panther_atk.png')";
+        
+        setTimeout(() => {
+            isPumaAttacking = false;
+            puma.style.backgroundImage = "url('Resources/panther_idle.png')";
+        }, 500);
+        return;
+    }
+    
+    // Movimiento normal
+    if (!isPumaAttacking) {
+        pumaX += pumaSpeed * pumaDirection;
+        updateCharacterPosition(puma, pumaX, pumaY);
     }
 }
 
@@ -214,40 +413,38 @@ function handlePlayerAttack() {
 
 
 function checkPlayerAttackHitsEnemy() {
-    if (!isAttacking || scene !== 2 || !canDamageEnemy2) return;
+    if (!isAttacking || scene !== 2 || !canDamagepuma || pumaDefeated) return;
 
     const playerRect = player.getBoundingClientRect();
-    const enemyRect = enemy2.getBoundingClientRect();
+    const enemyRect = puma.getBoundingClientRect();
 
-    const overlap = !(playerRect.right < enemyRect.left ||
-                      playerRect.left > enemyRect.right ||
-                      playerRect.bottom < enemyRect.top ||
-                      playerRect.top > enemyRect.bottom);
+    // Verificar si el ataque está en el rango correcto
+    const attackRange = player.style.transform === "scaleX(1)" ? 
+        { left: playerRect.left - 30, right: playerRect.left + 50 } : 
+        { left: playerRect.right - 50, right: playerRect.right + 30 };
 
-    if (overlap && enemy2Lives > 0) {
-        enemy2Lives--;
-        canDamageEnemy2 = false; // prevenir más daño hasta que se reinicie
+    const overlap = !(attackRange.right < enemyRect.left ||
+                     attackRange.left > enemyRect.right ||
+                     playerRect.bottom < enemyRect.top ||
+                     playerRect.top > enemyRect.bottom);
 
-        enemy2.style.backgroundImage = "url('Resources/enemy1_atk.png')";
+    if (overlap && pumaLives > 0) {
+        pumaLives--;
+        canDamagepuma = false;
 
-        setTimeout(() => {
-            enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
-        }, 300);
+        // Efecto visual de daño
+        puma.style.opacity = '0.5';
+        setTimeout(() => puma.style.opacity = '1', 100);
 
-        setTimeout(() => {
-            canDamageEnemy2 = true; // permitir volver a hacer daño
-        }, 500);
-
-        if (enemy2Lives <= 0) {
-            enemy2.style.display = 'none';
-            enemy2Defeated = true;
+        if (pumaLives <= 0) {
+            pumaDefeated = true;
+            puma.style.display = 'none';
             showDialogue("¡Has vencido al enemigo!");
         }
+
+        setTimeout(() => canDamagepuma = true, 500);
     }
 }
-
-
-
 
 
 function checkTriggerCollision() {
@@ -266,13 +463,31 @@ function startScene2() {
     scene = 2;
     transitioning = false;
 
-    enemy1.style.display = 'none';
+    // Asegurar visibilidad
+    document.querySelector('.platforms-scene-2').style.display = 'block';
+    puma.style.display = 'block';
+    document.querySelector('.blocker').style.display = 'block';
+    
+    // Ocultar elementos de escena 1
+    ayllu.style.display = 'none';
     trigger.style.display = 'none';
-    enemy2.style.display = 'block';
+    document.querySelector('.platforms-scene-1').style.display = 'none';
+    document.querySelector('.platforms-scene-2').style.display = 'block';
 
-    playerX = 0;
-    playerY = groundLevel;
+    // Resetear posiciones
+    playerX = 50;
+    playerY = groundLevel + 5;
+    pumaX = 900;
+    pumaY = groundLevel;
+    pumaDirection = 1;
+    
+    // Estado inicial mirando a la derecha
+    puma.classList.remove('puma-facing-left', 'puma-facing-right');
+    puma.classList.add('puma-facing-right');
 
+    updateCharacterPosition(player, playerX, playerY);
+    updateCharacterPosition(puma, pumaX, pumaY);
+    
     document.getElementById("background").style.backgroundImage = "url('Resources/BackGround.png')";
 }
 
@@ -303,10 +518,11 @@ function startIntroScene() {
 
 function gameLoop() {
     movePlayer();
-    checkNPCInteraction(); 
+    checkNPCInteraction();
     if (scene === 1) checkTriggerCollision();
+    if (scene === 2) movePuma(); // ← Añade esta línea
     updatePositions();
-    checkPlayerAttackHitsEnemy(); 
+    checkPlayerAttackHitsEnemy();
     requestAnimationFrame(gameLoop);
 }
 
@@ -338,17 +554,17 @@ function hideDialogue() {
 }
 
 setInterval(() => {
-    if (scene === 2 && playerLives > 0 && !enemy2Defeated) {
-        const dx = Math.abs(playerX - enemy2X);
-        const dy = Math.abs(playerY - enemy2Y);
+    if (scene === 2 && playerLives > 0 && !pumaDefeated) {
+        const dx = Math.abs(playerX - pumaX);
+        const dy = Math.abs(playerY - pumaY);
 
         if (dx < 100 && dy < 100) {
             playerLives--;
             updateLifeBar();
 
-            enemy2.style.backgroundImage = "url('Resources/enemy1_atk.png')";
+            puma.style.backgroundImage = "url('Resources/panther_atk.png')";
             setTimeout(() => {
-                enemy2.style.backgroundImage = "url('Resources/enemy1_idle.png')";
+                puma.style.backgroundImage = "url('Resources/panther_idle.png')";
             }, 500);
         }
     }
