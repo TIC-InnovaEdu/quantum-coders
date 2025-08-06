@@ -56,14 +56,18 @@ let transitioning = false;
 let playerLives = 4;
 
 // Variables del águila
-let eagleX = 700;
+let eagleX = 1200;
 let eagleY = 200;
 let eagleState = "idle";
 let eagleHitsLanded = 0;
 let isEagleDown = false;
 let eagleAttackCooldown = 0;
 let appleSpawnTimer = 0;
+let lastAttackType = "feather"; 
 const apples = [];
+let eagleVulnerable = false;
+let attackTurn = 0;
+
 
 
 // Eventos de teclado
@@ -447,6 +451,63 @@ function movePuma() {
     }
 }
 
+function startAttackSequence() {
+    eagleState = "charging";
+    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
+    attacksInCurrentPhase++;
+}
+
+// Codigo del águila
+function launchFeatherAttack() {
+    const count = 4;
+    const spacing = 40;
+
+    for (let i = 0; i < count; i++) {
+        createFeather(eagleX, eagleY + i * spacing, -1); // Izquierda
+        createFeather(eagleX + 120, eagleY + i * spacing, 1); // Derecha
+    }
+}
+
+function createFeather(x, y, direction) {
+    const feather = document.createElement('div');
+    feather.className = 'feather-projectile';
+    feather.style.left = `${x}px`;
+    feather.style.top = `${y}px`;
+    document.getElementById('stage').appendChild(feather);
+
+    const speed = 7 * direction;
+
+    const interval = setInterval(() => {
+        const currentX = parseInt(feather.style.left);
+        feather.style.left = `${currentX + speed}px`;
+
+        // Si se sale de pantalla
+        if (currentX < 0 || currentX > stage.offsetWidth) {
+            feather.remove();
+            clearInterval(interval);
+        }
+
+        // Colisión con jugador
+        const playerRect = player.getBoundingClientRect();
+        const featherRect = feather.getBoundingClientRect();
+
+        const hit = !(
+            featherRect.right < playerRect.left ||
+            featherRect.left > playerRect.right ||
+            featherRect.bottom < playerRect.top ||
+            featherRect.top > playerRect.bottom
+        );
+
+        if (hit && playerLives > 0) {
+            feather.remove();
+            clearInterval(interval);
+            playerLives--;
+            updateLifeBar();
+        }
+    }, 30);
+}
+
+
 function moveEagleBoss() {
     const eagle = document.getElementById('eagle');
     if (!eagle) return;
@@ -458,81 +519,67 @@ function moveEagleBoss() {
         }
     }
 
-    // Máquina de estados
-    switch(eagleState) {
+    switch (eagleState) {
         case "idle":
             eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
-            eagleX += Math.sin(Date.now()/500) * 3;
-            
-            // Ataque basado en fase
-            const now = Date.now();
-            if (now - lastAttackTime > 2000) { // 2 segundos entre ataques
-                lastAttackTime = now;
-                startAttackSequence();
-            }
-            break;
-            
-        case "charging":
-            if (Date.now() - lastAttackTime > 1000) { // 1 segundo de carga
-                launchFeatherAttack();
-                eagleState = "attacking";
+            eagleX += Math.sin(Date.now() / 500) * 3;
+
+            if (Date.now() - lastAttackTime > 3000) {
                 lastAttackTime = Date.now();
-            }
-            break;
-            
-        case "attacking":
-            if (Date.now() - lastAttackTime > 1500) { // 1.5 segundos de ataque
-                if (attacksInCurrentPhase >= getAttacksForPhase()) {
-                    eagleState = "diving";
-                } else {
-                    eagleState = "idle";
+                eagleState = attackTurn % 2 === 0 ? "dive" : "feather_charge";
+                if (eagleState === "dive") {
+                    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
                 }
+            }
+            break;
+
+        case "dive":
+            const dx = playerX - eagleX;
+            const dy = playerY - eagleY;
+            eagleX += dx * 0.1;
+            eagleY += dy * 0.1;
+
+            eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_atk.png')";
+
+            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                eagleState = "idle";
+                eagleY = playerY; // actualizar Y después de la embestida
+                lastAttackTime = Date.now();
+                attackTurn++;
+            }
+            break;
+
+        case "feather_charge":
+            eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
+            if (Date.now() - lastAttackTime > 800) {
+                eagleState = "feather_attack";
+                launchFeatherAttack();
                 lastAttackTime = Date.now();
             }
             break;
-            
-        case "diving":
-            // Embestida
-            const targetX = playerX;
-            const dx = targetX - eagleX;
-            eagleX += dx * 0.1;
-            eagleY += 10;
-            
-            if (eagleY >= groundLevel - 30) {
+
+        case "feather_attack":
+            eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
+            if (Date.now() - lastAttackTime > 1000) {
                 eagleState = "vulnerable";
-                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_vulnerable.png')";
-                isEagleDown = true;
-                setTimeout(resetEagle, 4000); // 4 segundos vulnerable
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_burnout.png')";
+                eagleVulnerable = true;
+
+                setTimeout(() => {
+                    eagleVulnerable = false;
+                    eagleState = "idle";
+                    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
+                    lastAttackTime = Date.now();
+                    attackTurn++;
+                }, 2000);
             }
-            break;
-            
-        case "vulnerable":
-            // Esperar a que termine el tiempo de vulnerabilidad
             break;
     }
-    
+
     updateCharacterPosition(eagle, eagleX, eagleY);
 }
 
-function startAttackSequence() {
-    eagleState = "charging";
-    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
-    attacksInCurrentPhase++;
-}
 
-function launchFeatherAttack() {
-    const featherCount = currentPhase === 1 ? 5 : currentPhase === 2 ? 7 : 9;
-    const spread = currentPhase === 1 ? Math.PI/3 : currentPhase === 2 ? Math.PI/2 : Math.PI;
-    
-    for (let i = 0; i < featherCount; i++) {
-        const angle = -Math.PI/2 - spread/2 + (spread/(featherCount-1)) * i;
-        feathers.push(new Feather(
-            eagleX + 100, 
-            eagleY + 50,
-            angle
-        ));
-    }
-}
 
 function getAttacksForPhase() {
     return currentPhase === 1 ? 2 : currentPhase === 2 ? 4 : 6;
@@ -554,53 +601,28 @@ function resetEagle() {
 }
 
 function checkEagleHit() {
-    // Solo verificar si el águila está vulnerable y el jugador está atacando
-    if (eagleState !== "vulnerable" || !isAttacking) return;
-    
-    const eagleRect = document.getElementById('eagle').getBoundingClientRect();
+    if (!isAttacking || !eagleVulnerable) return;
+
     const playerRect = player.getBoundingClientRect();
-    
-    // Área de golpe más generosa
-    const hitArea = {
-        left: player.style.transform === "scaleX(1)" 
-            ? playerRect.left - 40 
-            : playerRect.right - 60,
-        right: player.style.transform === "scaleX(1)" 
-            ? playerRect.left + 60 
-            : playerRect.right + 40
-    };
-    
-    const overlap = !(
-        hitArea.right < eagleRect.left ||
-        hitArea.left > eagleRect.right ||
-        playerRect.bottom < eagleRect.top ||
-        playerRect.top > eagleRect.bottom
-    );
+    const eagleRect = eagle.getBoundingClientRect();
+
+    const overlap = !(playerRect.right < eagleRect.left ||
+                      playerRect.left > eagleRect.right ||
+                      playerRect.bottom < eagleRect.top ||
+                      playerRect.top > eagleRect.bottom);
 
     if (overlap) {
-        // Efecto visual
-        const eagle = document.getElementById('eagle');
-        eagle.style.filter = "brightness(2)";
-        setTimeout(() => eagle.style.filter = "brightness(1)", 200);
-        
         eagleHitsLanded++;
-        console.log(`Golpe al águila! Hits: ${eagleHitsLanded}`);
-        
+        eagle.classList.add("eagle-damage");
+        setTimeout(() => eagle.classList.remove("eagle-damage"), 300);
+
         if (eagleHitsLanded >= 3) {
-            // Victoria
-            document.getElementById('eagle').style.display = 'none';
-            showDialogue("¡Has derrotado al Águila Sagrada!");
-        } else {
-            // Reiniciar después del golpe
-            setTimeout(resetEagle, 800);
-            
-            // 50% de probabilidad de generar manzana
-            if (Math.random() < 0.5) spawnApple();
+            eagle.style.display = "none";
+            showDialogue("¡Has derrotado al Águila!");
         }
-        
-        isEagleDown = false;
     }
 }
+
 
 
 // Sistema de manzanas (corregido)
@@ -799,7 +821,7 @@ function startIntroScene() {
     const introDiv = document.getElementById('introText');
     const continuePrompt = document.getElementById('continuePrompt');
 
-    introDiv.innerHTML = ""; // limpiar texto
+    introDiv.innerHTML = ""; 
     continuePrompt.style.display = 'none';
     currentChar = 0;
 
@@ -848,7 +870,7 @@ function startScene3() {
     updateCharacterPosition(document.getElementById('eagle'), eagleX, eagleY);
     
     // Fondo
-    document.getElementById("background").style.backgroundImage = "url('Resources/Background2.png')";
+    document.getElementById("background").style.backgroundImage = "url('Resources/Background3.png')";
     
     // Inicializar águila
     const eagle = document.getElementById('eagle');
