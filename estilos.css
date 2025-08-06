@@ -93,12 +93,12 @@ body {
 .enemy {
     position: absolute;
     width: 180px;
-    height: 120px; /* Reducida para ajustar mejor al sprite */
+    height: 120px; 
     background-size: contain;
     background-repeat: no-repeat;
-    background-position: bottom center; /* Asegura que los pies queden abajo */
+    background-position: bottom center; 
     background-color: transparent;
-    bottom: 100px; /* Igual que el groundLevel del juego */
+    bottom: 100px; 
     z-index: 2;
 }
 
@@ -106,16 +106,16 @@ body {
     height: 100px;
     bottom: 100px;
     background-position: bottom;
-    transform-origin: center; /* Importante para que el flip sea correcto */
-    transition: transform 0.2s ease; /* Para un cambio suave de dirección */
+    transform-origin: center; 
+    transition: transform 0.2s ease; 
 }
 
 .puma-facing-right {
-    transform: scaleX(-1); /* Voltear horizontalmente para mirar DERECHA */
+    transform: scaleX(-1); 
 }
 
 .puma-facing-left {
-    transform: none; /* Estado natural (IZQUIERDA) */
+    transform: none; 
 }
 
 #enemy2 {
@@ -293,11 +293,11 @@ body {
     width: 50px;
     height: 200px;
     background: #523521;
-    border: 2px solid yellow; /* Borde amarillo para debug */
+    border: 2px solid rgb(149, 97, 1); 
     border-radius: 4px;
     z-index: 3;
     /* Forzar visibilidad */
-    box-shadow: 0 0 0 3px cyan;
+    box-shadow: 0 0 0 3px rgb(130, 60, 0);
     background-color: rgba(0, 255, 255, 0.3) !important;
 }
 
@@ -349,11 +349,11 @@ body {
 }
 
 .feather-projectile {
-    width: 32px;
-    height: 32px;
+    width: 100px;
+    height: 100px;
     background-size: contain;
+    background-image: url('Resources/First_Boss/eagle_atk_mag.png');
     background-repeat: no-repeat;
     position: absolute;
     z-index: 5;
-    transition: transform 0.1s linear;
 }
