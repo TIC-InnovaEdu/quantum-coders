@@ -65,7 +65,7 @@ body {
     position: absolute;
     width: 100%;
     height: 100%;
-    background-image: url('Resources/Background1.png'); /* Mantenemos el fondo inicial */
+    background-image: url('Resources/Background1.png'); 
     background-size: cover;
     background-position: bottom;
     z-index: 0;
@@ -320,11 +320,32 @@ body {
     position: absolute;
 }
 
+#eagle-life-bar {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99;
+    background: #4b2f17;
+    padding: 5px;
+    border-radius: 10px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: left;
+    justify-content: center;
+}
+
+#eagle-life-bar img {
+    width: 450px;
+    height: 80px;
+}
+
+
 /* Items de curación */
 .health-item {
     position: absolute;
-    width: 40px;
-    height: 40px;
+    width: 100px;
+    height: 100px;
     background-size: contain;
     background-repeat: no-repeat;
     z-index: 3;
@@ -349,11 +370,12 @@ body {
 }
 
 .feather-projectile {
-    width: 100px;
-    height: 100px;
+    width: 66px;
+    height: 60px;
     background-size: contain;
     background-image: url('Resources/First_Boss/eagle_atk_mag.png');
     background-repeat: no-repeat;
     position: absolute;
     z-index: 5;
+    transition: transform 0.1s linear;
 }
