@@ -6,7 +6,6 @@ const stage = document.getElementById('stage');
 const keysPressed = {};
 const feathers = [];
 let currentPhase = 1;
-let lastAttackTime = 0;
 let attacksInCurrentPhase = 0;
 
 
@@ -54,6 +53,7 @@ let pumaLives = 6;
 let scene = null;
 let transitioning = false;
 let playerLives = 4;
+let playerRecentlyDamaged = false;
 
 // Variables del águila
 let eagleX = 1200;
@@ -67,7 +67,16 @@ let lastAttackType = "feather";
 const apples = [];
 let eagleVulnerable = false;
 let attackTurn = 0;
-
+let eagleDiveTargetX = 0;
+let eagleDiveTargetY = 0;
+let eagleDiveSpeed = 4; 
+let eagleLives = 7;
+let eagleCanBeDamaged = false;
+let eagleLastDiveTargetY = 200;
+let eagleCooldown = false;
+let lastAttackTime = Date.now();
+let attackType = "dive"; 
+let playerRecentlyHit = false;
 
 
 // Eventos de teclado
@@ -203,7 +212,6 @@ function checkPlatformBlockers() {
     return false;
 }
 
-// --- BLOQUEO CON MONTAÑAS / MUROS ---
 function checkWallCollision() {
     const walls = document.querySelectorAll('.blocker-wall');
     const playerRect = player.getBoundingClientRect();
@@ -303,6 +311,58 @@ function updateLifeBar() {
     }
 }
 
+function updateEagleLifeBar() {
+    const eagleLifeImage = document.getElementById('eagleLifeImage');
+    const eagleLifeBar = document.getElementById('eagle-life-bar');
+
+    if (scene === 3) {
+        eagleLifeBar.style.display = "block";
+    }
+
+    if (eagleLives >= 7) {
+        eagleLifeImage.src = 'Resources/First_Boss/vida_full_eagle.png';
+    } else if (eagleLives === 6) {
+        eagleLifeImage.src = 'Resources/First_Boss/vida_6_eagle.png';
+    } else if (eagleLives === 5) {
+        eagleLifeImage.src = 'Resources/First_Boss/vida_5_eagle.png';
+    } else if (eagleLives === 4) {
+        eagleLifeImage.src = 'Resources/First_Boss/vida_4_eagle.png';
+    } else if (eagleLives === 3) {
+        eagleLifeImage.src = 'Resources/First_Boss/vida_3_eagle.png';
+    } else if (eagleLives === 2) {
+        eagleLifeImage.src = 'Resources/First_Boss/vida_2_eagle.png';
+    } else if (eagleLives === 1) {
+        eagleLifeImage.src = 'Resources/First_Boss/vida_1_eagle.png';
+    }
+
+    if (eagleLives <= 0) {
+        document.getElementById('eagle').style.display = 'none';
+        showDialogue("¡Has derrotado al jefe!");
+        setTimeout(hideDialogue, 3000);
+    }
+}
+
+
+function checkCollision(el1, el2) {
+    const rect1 = el1.getBoundingClientRect();
+    const rect2 = el2.getBoundingClientRect();
+
+    return !(
+        rect1.right < rect2.left ||
+        rect1.left > rect2.right ||
+        rect1.bottom < rect2.top ||
+        rect1.top > rect2.bottom
+    );
+}
+
+function applyDamageToPlayer() {
+    if (!playerRecentlyDamaged) {
+        playerLives--;
+        updateLifeBar(); 
+        playerRecentlyDamaged = true;
+        setTimeout(() => playerRecentlyDamaged = false, 1000);
+    }
+}
 
 
 function showGameOver() {
@@ -457,7 +517,6 @@ function startAttackSequence() {
     attacksInCurrentPhase++;
 }
 
-// Codigo del águila
 function launchFeatherAttack() {
     const count = 4;
     const spacing = 40;
@@ -475,17 +534,11 @@ function createFeather(x, y, direction) {
     feather.style.top = `${y}px`;
     document.getElementById('stage').appendChild(feather);
 
-    const speed = 7 * direction;
+    const speed = 6 * direction;
 
     const interval = setInterval(() => {
         const currentX = parseInt(feather.style.left);
         feather.style.left = `${currentX + speed}px`;
-
-        // Si se sale de pantalla
-        if (currentX < 0 || currentX > stage.offsetWidth) {
-            feather.remove();
-            clearInterval(interval);
-        }
 
         // Colisión con jugador
         const playerRect = player.getBoundingClientRect();
@@ -504,15 +557,22 @@ function createFeather(x, y, direction) {
             playerLives--;
             updateLifeBar();
         }
+
+        // Eliminar si ya salió de pantalla
+        if (currentX < -100 || currentX > 2000) {
+            feather.remove();
+            clearInterval(interval);
+        }
+
     }, 30);
 }
 
 
 function moveEagleBoss() {
     const eagle = document.getElementById('eagle');
-    if (!eagle) return;
+    if (!eagle || eagleLives <= 0) return;
 
-    // Actualizar plumas
+    // Actualizar proyectiles de plumas
     for (let i = feathers.length - 1; i >= 0; i--) {
         if (feathers[i].update()) {
             feathers.splice(i, 1);
@@ -522,55 +582,80 @@ function moveEagleBoss() {
     switch (eagleState) {
         case "idle":
             eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
-            eagleX += Math.sin(Date.now() / 500) * 3;
+            eagleX += Math.sin(Date.now() / 500) * 2;
 
-            if (Date.now() - lastAttackTime > 3000) {
+            if (Date.now() - lastAttackTime > 2000) {
+                eagleState = attackType === "dive" ? "charging" : "feather_charge";
                 lastAttackTime = Date.now();
-                eagleState = attackTurn % 2 === 0 ? "dive" : "feather_charge";
-                if (eagleState === "dive") {
-                    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
-                }
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
+            }
+            break;
+
+        case "charging":
+            // Prepara embestida
+            if (Date.now() - lastAttackTime > 800) {
+                eagleState = "dive";
+                eagleLastDiveTargetY = playerY;
+                lastAttackTime = Date.now();
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_atk.png')";
             }
             break;
 
         case "dive":
+            // Movimiento hacia el jugador con eje X e Y
             const dx = playerX - eagleX;
-            const dy = playerY - eagleY;
+            const dy = eagleLastDiveTargetY - eagleY;
+
             eagleX += dx * 0.1;
             eagleY += dy * 0.1;
 
-            eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_atk.png')";
-
             if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
                 eagleState = "idle";
-                eagleY = playerY; // actualizar Y después de la embestida
+                eagleY = eagleLastDiveTargetY;
+                attackType = "feather"; // alternar
                 lastAttackTime = Date.now();
-                attackTurn++;
+            }
+            // Verificamos colisión con el jugador DURANTE la embestida
+            const eagleRect = eagle.getBoundingClientRect();
+            const playerRect = player.getBoundingClientRect();
+
+            const eagleHitsPlayer = !(
+                eagleRect.right < playerRect.left ||
+                eagleRect.left > playerRect.right ||
+                eagleRect.bottom < playerRect.top ||
+                eagleRect.top > playerRect.bottom
+            );
+
+            if (eagleHitsPlayer && !playerRecentlyHit) {
+                playerLives--;
+                updateLifeBar();
+                playerRecentlyHit = true;
+                setTimeout(() => playerRecentlyHit = false, 1000); // cooldown de daño
             }
             break;
 
         case "feather_charge":
-            eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
             if (Date.now() - lastAttackTime > 800) {
                 eagleState = "feather_attack";
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
                 launchFeatherAttack();
                 lastAttackTime = Date.now();
             }
             break;
 
         case "feather_attack":
-            eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
             if (Date.now() - lastAttackTime > 1000) {
                 eagleState = "vulnerable";
-                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_burnout.png')";
                 eagleVulnerable = true;
+                eagleCanBeDamaged = true;
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_burnout.png')";
 
                 setTimeout(() => {
                     eagleVulnerable = false;
+                    eagleCanBeDamaged = false;
                     eagleState = "idle";
-                    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
                     lastAttackTime = Date.now();
-                    attackTurn++;
+                    attackType = "dive"; // alternar
                 }, 2000);
             }
             break;
@@ -601,7 +686,7 @@ function resetEagle() {
 }
 
 function checkEagleHit() {
-    if (!isAttacking || !eagleVulnerable) return;
+    if (!isAttacking || !eagleCanBeDamaged || eagleCooldown || eagleLives <= 0) return;
 
     const playerRect = player.getBoundingClientRect();
     const eagleRect = eagle.getBoundingClientRect();
@@ -612,16 +697,24 @@ function checkEagleHit() {
                       playerRect.top > eagleRect.bottom);
 
     if (overlap) {
-        eagleHitsLanded++;
+        eagleCooldown = true;
+        eagleLives--;
+        updateEagleLifeBar();
         eagle.classList.add("eagle-damage");
-        setTimeout(() => eagle.classList.remove("eagle-damage"), 300);
 
-        if (eagleHitsLanded >= 3) {
+        setTimeout(() => {
+            eagle.classList.remove("eagle-damage");
+            eagleCooldown = false;
+        }, 500); 
+
+        if (eagleLives <= 0) {
             eagle.style.display = "none";
             showDialogue("¡Has derrotado al Águila!");
         }
     }
 }
+
+
 
 
 
@@ -849,6 +942,8 @@ function startScene3() {
     // Mostrar elementos
     document.getElementById('eagleBoss').style.display = 'block';
     document.querySelector('.platforms-scene-3').style.display = 'block';
+    document.getElementById('eagle-life-bar').style.display = 'flex';
+    updateEagleLifeBar();
     
     // Ocultar elementos
     document.querySelector('.platforms-scene-2').style.display = 'none';
@@ -876,6 +971,7 @@ function startScene3() {
     const eagle = document.getElementById('eagle');
     eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
     eagle.style.display = 'block';
+
 }
 
 class Feather {
@@ -926,7 +1022,7 @@ function gameLoop() {
         moveEagleBoss();
         checkEagleHit();
         checkAppleCollection();
-        checkFeatherCollision(); // <- Nueva función para colisión con plumas
+        checkFeatherCollision(); 
         
         if (appleSpawnTimer <= 0 && apples.length < 2) {
             if (Math.random() < 0.1) spawnApple();
@@ -998,3 +1094,4 @@ document.getElementById("exitButton").addEventListener("click", () => {
   window.close(); // puede no funcionar en todos los navegadores
   alert("Gracias por visitar RUNA PACHAWAN");
 });
+
