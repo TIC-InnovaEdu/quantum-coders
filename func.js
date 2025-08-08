@@ -41,11 +41,13 @@ let triggerX = 900;
 let triggerY = 100;
 let quizActive = false;
 let selectedOptionIndex = 0;
+let wisdomPoints = 0;
+
 // Configuración de la pregunta
 const quizQuestionText = "¿En qué año comenzó la invasión española al Tahuantinsuyo?";
 const quizOptions = [
     "1492",
-    "1532", // ✅ correcta
+    "1532", //correcta
     "1822"
 ];
 const correctAnswerIndex = 1; 
@@ -287,6 +289,18 @@ function checkNPCInteraction() {
     }
 }
 
+function showCenterMessage(text, duration = 2000) {
+    const messageBox = document.getElementById("centerMessage");
+    const messageText = document.getElementById("centerMessageText");
+
+    messageText.textContent = text;
+    messageBox.style.display = "block";
+
+    setTimeout(() => {
+        messageBox.style.display = "none";
+    }, duration);
+}
+
 
 function updateLifeBar() {
     const lifeImage = document.getElementById('lifeImage');
@@ -319,6 +333,10 @@ function updateLifeBar() {
     } else {
         showGameOver();
     }
+}
+
+function updateWisdomBar() {
+    document.getElementById('wisdom-points').textContent = wisdomPoints;
 }
 
 function updateEagleLifeBar() {
@@ -1036,7 +1054,7 @@ function gameLoop() {
         
         if (appleSpawnTimer <= 0 && apples.length < 2) {
             if (Math.random() < 0.1) spawnApple();
-            appleSpawnTimer = 180;
+            appleSpawnTimer = 100;
         } else {
             appleSpawnTimer--;
         }
@@ -1139,26 +1157,45 @@ function updateQuizSelection() {
 
 function checkQuizAnswer() {
     if (selectedOptionIndex === correctAnswerIndex) {
-        document.getElementById("quiz-container").style.display = "none";
-        quizActive = false;
-        // Avanzar a escena 2
-        changeScene(2);
+        if (scene === 1 && !talkedToNPC) {
+            wisdomPoints += 10;
+            updateWisdomBar();
+            showCenterMessage("¡Acertaste! +10 puntos de sabiduría", 2500);
+            document.getElementById("quiz-container").style.display = "none";
+            quizActive = false;
+            startScene2();
+        } 
+        else {
+            wisdomPoints += 10;
+            updateWisdomBar();
+            showCenterMessage("¡Acertaste! +10 puntos de sabiduría", 2500);
+            document.getElementById("quiz-container").style.display = "none";
+            quizActive = false;
+        }
     } else {
-        alert("Respuesta incorrecta. Vuelve a intentarlo Guerrero.");
-        window.close(); 
+        if (scene === 1 && !talkedToNPC) {
+            showCenterMessage("Respuesta incorrecta...", 2500);
+            window.close(); 
+        } 
+        else {
+            showCenterMessage("Respuesta incorrecta...", 2500);
+            document.getElementById("quiz-container").style.display = "none";
+            quizActive = false;
+        }
     }
 }
+
 
 document.getElementById("playButton").addEventListener("click", () => {
     document.getElementById("menu").style.display = "none";
     document.getElementById("introScene").style.display = "flex";
     scene = 0;  
     startIntroScene(); 
-    updateLifeBar(); // Asegurar que la barra de vida se muestra
+    updateLifeBar();
+    updateWisdomBar();
     gameLoop();
 });
 
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
-
