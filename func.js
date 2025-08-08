@@ -39,6 +39,16 @@ let aylluX = 600;
 let aylluY = 120;
 let triggerX = 900;
 let triggerY = 100;
+let quizActive = false;
+let selectedOptionIndex = 0;
+// Configuración de la pregunta
+const quizQuestionText = "¿En qué año comenzó la invasión española al Tahuantinsuyo?";
+const quizOptions = [
+    "1492",
+    "1532", // ✅ correcta
+    "1822"
+];
+const correctAnswerIndex = 1; 
 
 // Variables del puma
 let pumaDirection = 1;
@@ -271,7 +281,7 @@ function checkNPCInteraction() {
                    playerRect.top > npcRect.bottom + 20);
 
     if (near && keysPressed['b'] && !talkedToNPC) {
-        showDialogue("¡Bienvenido, guerrero! Puedes continuar...");
+        showQuiz();
         talkedToNPC = true;
         setTimeout(hideDialogue, 3000);
     }
@@ -1080,6 +1090,65 @@ setInterval(() => {
     }
 }, 1000);
 
+function showQuiz() {
+    quizActive = true;
+    selectedOptionIndex = 0;
+
+    document.getElementById("quiz-question").textContent = quizQuestionText;
+
+    const optionsContainer = document.getElementById("quiz-options");
+    optionsContainer.innerHTML = "";
+
+    quizOptions.forEach((option, index) => {
+        const li = document.createElement("li");
+        li.textContent = option;
+        li.classList.add("quiz-option");
+        if (index === selectedOptionIndex) li.classList.add("selected");
+        optionsContainer.appendChild(li);
+    });
+
+    document.getElementById("quiz-container").style.display = "flex";
+}
+
+// Mover selección con flechas SOLO cuando el quiz está activo
+document.addEventListener("keydown", (e) => {
+    if (!quizActive) return;
+
+    if (e.key === "ArrowUp") {
+        selectedOptionIndex = (selectedOptionIndex - 1 + quizOptions.length) % quizOptions.length;
+        updateQuizSelection();
+        e.preventDefault();
+    }
+    if (e.key === "ArrowDown") {
+        selectedOptionIndex = (selectedOptionIndex + 1) % quizOptions.length;
+        updateQuizSelection();
+        e.preventDefault();
+    }
+    if (e.key.toLowerCase() === "a") {
+        checkQuizAnswer();
+        e.preventDefault();
+    }
+});
+
+function updateQuizSelection() {
+    const optionElements = document.querySelectorAll(".quiz-option");
+    optionElements.forEach((el, index) => {
+        el.classList.toggle("selected", index === selectedOptionIndex);
+    });
+}
+
+function checkQuizAnswer() {
+    if (selectedOptionIndex === correctAnswerIndex) {
+        document.getElementById("quiz-container").style.display = "none";
+        quizActive = false;
+        // Avanzar a escena 2
+        changeScene(2);
+    } else {
+        alert("Respuesta incorrecta. Vuelve a intentarlo Guerrero.");
+        window.close(); 
+    }
+}
+
 document.getElementById("playButton").addEventListener("click", () => {
     document.getElementById("menu").style.display = "none";
     document.getElementById("introScene").style.display = "flex";
@@ -1089,9 +1158,7 @@ document.getElementById("playButton").addEventListener("click", () => {
     gameLoop();
 });
 
-
 document.getElementById("exitButton").addEventListener("click", () => {
-  window.close(); // puede no funcionar en todos los navegadores
-  alert("Gracias por visitar RUNA PACHAWAN");
+  window.close();
 });
 
