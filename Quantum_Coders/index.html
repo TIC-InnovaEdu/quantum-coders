@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Runa Pachawan - Grupo 10</title>
+    <link rel="stylesheet" href="estilos.css" />
+</head>
+<body>
+    <div id="menu" class="fullscreen">
+        <h1 id="gameTitle">RUNA PACHAWAN</h1>
+        <div class="menu-options">
+            <button id="playButton">Jugar</button>
+            <button id="exitButton">Salir</button>
+        </div>
+        <div class="controls">
+            <h3>Controles:</h3>
+            <p>🡆 🡄 🡅 🡇 - Moverse</p>
+            <p>A - Atacar</p>
+            <p>B - Interactuar</p>
+        </div>
+    </div>
+    <div id="game-container">
+        <div class="background" id="background"></div>
+        <div id="stage">
+            <div id="floor"></div>
+            <!-- Plataforma flotante -->
+            <div class="platforms-scene-1">
+                
+            </div>
+            <!-- Plataformas visibles solo en escena 2 -->
+            <div class="platforms-scene-2" style="display: none;">
+                <!-- Plataforma 1 -->
+                <div class="platform" style="left: 350px; bottom: 180px; width: 120px; height: 20px;"></div>
+                <div class="blocker-wall" style="left: 350px; bottom: 100px; width: 120px; height: 80px;"></div>
+
+                <!-- Plataforma 2 -->
+                <div class="platform" style="left: 700px; bottom: 250px; width: 120px; height: 20px;"></div>
+    
+                <!-- Plataforma 3 -->
+                <div class="platform" style="left: 900px; bottom: 400px; width: 120px; height: 20px;"></div>
+            </div>
+
+            <!--Scenario 3-->
+            <div class="platforms-scene-3" style="display: none;">
+                <!-- Plataforma izquierda -->
+                <div class="platform" style="left: 200px; bottom: 200px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 200px; bottom: 600px; width: 120px; height: 20px;"></div>
+                <!-- Plataforma derecha -->
+                <div class="platform" style="left: 1200px; bottom: 200px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 1200px; bottom: 600px; width: 120px; height: 20px;"></div>
+                
+            </div>
+
+            <div id="eagleBoss" style="display: none;">
+                <div class="boss" id="eagle"></div>
+            <img id="feather-sprite" src="Resources/First_Boss/eagle_atk_mag.png" style="display:none">
+            </div>
+            <div class="collectible" id="runa1" style="left: 700px; bottom: 180px;"></div>
+            <div class="character" id="player"></div>
+            <!--Integración de Ayllu-->
+            <div class="companion" id="ayllu">
+                <div class="npc-label">Presiona 'B'</div>
+            </div>
+            <div class="scene-trigger" id="trigger1"></div>
+            <div class="enemy" id="puma" style="display: none;"></div>
+            <div id="life-bar">
+                <img id="lifeImage" src="Resources/vida4.png" />
+            </div>
+            <!-- Contador de sabiduría -->
+            <div id="wisdom-bar">
+                <span id="wisdom-label">Sabiduría:</span>
+                <span id="wisdom-points">0</span>
+            </div>
+            <div id="eagle-life-bar" style="display: none;">
+                <img id="eagleLifeImage" src="Resources/vida_full_eagle.png" />
+            </div>
+            <div id="gameOverScreen" style="display: none;">
+                 <h1>Game Over</h1>
+                 <p>Has perdido todas tus vidas.</p>
+            </div>
+            <!-- Mensaje central para aciertos/errores -->
+            <div id="centerMessage" style="display: none;">
+                <p id="centerMessageText"></p>
+            </div>
+            <div class="blocker" style="left: 1250px; bottom: 100px;"></div>
+            <!-- Cuadro de pregunta tipo quiz -->
+            <div id="quiz-container" style="display: none;">
+                <div id="quiz-box">
+                    <p id="quiz-question">Pregunta aquí...</p>
+                    <ul id="quiz-options">
+                        <li class="quiz-option selected">Opción 1</li>
+                        <li class="quiz-option">Opción 2</li>
+                        <li class="quiz-option">Opción 3</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="introScene">
+        <div id="introText"></div>
+        <div id="continuePrompt" style="display: none;">Presiona 'B' para continuar</div>
+    </div>
+    <script src="func.js"></script>
+</body>
+</html>
