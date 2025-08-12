@@ -7,6 +7,7 @@ const keysPressed = {};
 const feathers = [];
 let currentPhase = 1;
 let attacksInCurrentPhase = 0;
+let eagleDiveHasHit = false;
 
 
 // Constantes del juego
@@ -260,19 +261,23 @@ function checkFeatherCollision() {
             playerRect.left < featherRect.right &&
             playerRect.bottom > featherRect.top &&
             playerRect.top < featherRect.bottom) {
-            
-            playerLives--;
-            updateLifeBar();
-            feather.element.remove();
-            feathers.splice(i, 1);
-            
+                
+            if (!playerRecentlyHit) {
+                playerLives--;
+                updateLifeBar();
+                playerRecentlyHit = true;
+                setTimeout(() => { playerRecentlyHit = false; }, 350);
+            }
+
             // Efecto de daño
             player.style.filter = "brightness(1.5)";
             setTimeout(() => player.style.filter = "none", 200);
+
+            feather.element.remove();
+            feathers.splice(i, 1);
         }
     }
 }
-
 function checkNPCInteraction() {
     const playerRect = player.getBoundingClientRect();
     const npcRect = ayllu.getBoundingClientRect();
@@ -636,32 +641,32 @@ function moveEagleBoss() {
 
             eagleX += dx * 0.1;
             eagleY += dy * 0.1;
-
-            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-                eagleState = "idle";
-                eagleY = eagleLastDiveTargetY;
-                attackType = "feather"; // alternar
-                lastAttackTime = Date.now();
-            }
             // Verificamos colisión con el jugador DURANTE la embestida
             const eagleRect = eagle.getBoundingClientRect();
             const playerRect = player.getBoundingClientRect();
-
+            
             const eagleHitsPlayer = !(
                 eagleRect.right < playerRect.left ||
                 eagleRect.left > playerRect.right ||
                 eagleRect.bottom < playerRect.top ||
                 eagleRect.top > playerRect.bottom
             );
-
-            if (eagleHitsPlayer && !playerRecentlyHit) {
+            if (eagleHitsPlayer && !playerRecentlyHit && !eagleDiveHasHit) {
                 playerLives--;
                 updateLifeBar();
                 playerRecentlyHit = true;
-                setTimeout(() => playerRecentlyHit = false, 1000); // cooldown de daño
+                eagleDiveHasHit = true; // Evita más golpes en esta embestida
+                setTimeout(() => { playerRecentlyHit = false; }, 1000);
             }
-            break;
-
+            // Cuando termina la embestida
+            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                eagleState = "idle";
+                eagleY = eagleLastDiveTargetY;
+                attackType = "feather"; // alternar
+                lastAttackTime = Date.now();
+                eagleDiveHasHit = false; // Reinicia para la próxima embestida
+                }
+    break;
         case "feather_charge":
             if (Date.now() - lastAttackTime > 800) {
                 eagleState = "feather_attack";
@@ -914,7 +919,7 @@ function startScene2() {
     trigger.style.display = 'none';
 
     // Cambiar fondo
-    document.getElementById("background").style.backgroundImage = "url('Resources/BackGround.png')";
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround.png')";
     // Resetear posiciones
     playerX = 50;
     playerY = groundLevel + 5;
@@ -929,7 +934,7 @@ function startScene2() {
     updateCharacterPosition(player, playerX, playerY);
     updateCharacterPosition(puma, pumaX, pumaY);
     
-    document.getElementById("background").style.backgroundImage = "url('Resources/BackGround.png')";
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround.png')";
     if (pumaDefeated) {
         setTimeout(() => {
             showDialogue("¡Prepárate para el combate final!");
@@ -993,14 +998,21 @@ function startScene3() {
     updateCharacterPosition(document.getElementById('eagle'), eagleX, eagleY);
     
     // Fondo
-    document.getElementById("background").style.backgroundImage = "url('Resources/Background3.png')";
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround3.png')";
     
     // Inicializar águila
     const eagle = document.getElementById('eagle');
     eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
     eagle.style.display = 'block';
 
+    // Protege al jugador durante 1.2s al empezar la pelea
+    playerRecentlyHit = true;
+    setTimeout(() => { playerRecentlyHit = false; }, 1200);
+
+    // Reinicia el temporizador de ataques
+    lastAttackTime = Date.now();
 }
+
 
 class Feather {
     constructor(x, y, angle) {
