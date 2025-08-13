@@ -254,10 +254,10 @@ body {
 }
 
 .enemy.idle {
-  background-image: url('Resources/panther_idle.png');
+  background-image: url('Resources/Mobs/panther_idle.png');
 }
 .enemy.attacking {
-  background-image: url('Resources/panther_atk.png');
+  background-image: url('Resources/Mobs/panther_atk.png');
 }
 
 #introScene {
@@ -348,6 +348,12 @@ body {
     background-repeat: no-repeat;
     z-index: 10;
     position: absolute;
+}
+
+/* Solo burnout se hace pequeño */
+.boss[style*="eagle_burnout.png"] {
+    width: 200px !important;
+    height: 100px !important;
 }
 
 #eagle-life-bar {

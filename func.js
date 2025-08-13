@@ -18,9 +18,9 @@ const playerWidth = 100;
 const containerWidth = window.innerWidth;
 
 // Inicialización de sprites
-player.style.backgroundImage = "url('Resources/Player_idle.png')";
+player.style.backgroundImage = "url('Resources/Player/Player_idle.png')";
 ayllu.style.backgroundImage = "url('Resources/Totems/Ayllu_Idle.png')";
-puma.style.backgroundImage = "url('Resources/panther_idle.png')";
+puma.style.backgroundImage = "url('Resources/Mobs/panther_idle.png')";
 
 // Variables del juego
 let introText = `En tiempos ancestrales, antes de que el tiempo se midiera y los pueblos tuvieran nombre,
@@ -250,29 +250,50 @@ function checkWallCollision() {
     return false;
 }
 
+class Feather {
+    constructor(x, y, angle) {
+        this.element = document.createElement('div');
+        this.element.className = 'feather-projectile';
+        this.x = x;
+        this.y = y;
+        this.angle = angle;
+        this.speed = 5;
+        this.gravity = 0.2;
+        this.lifetime = 0;
+        this.element.style.backgroundImage = "url('Resources/First_Boss/feather.png')";
+        this.element.style.width = '32px';
+        this.element.style.height = '32px';
+        this.element.style.position = 'absolute';
+        this.element.style.transform = `rotate(${angle}rad)`;
+        stage.appendChild(this.element);
+    }
+
+    update() {
+        this.lifetime++;
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed + this.gravity * this.lifetime;
+        this.element.style.left = `${this.x}px`;
+        this.element.style.bottom = `${this.y}px`;
+
+        // Eliminar si sale de pantalla
+        if (this.y > stage.offsetHeight || this.x < 0 || this.x > stageWidth) {
+            this.element.remove();
+            return true;
+        }
+        return false;
+    }
+}
+
 function checkFeatherCollision() {
     const playerRect = player.getBoundingClientRect();
-    
     for (let i = feathers.length - 1; i >= 0; i--) {
         const feather = feathers[i];
         const featherRect = feather.element.getBoundingClientRect();
-        
         if (playerRect.right > featherRect.left && 
             playerRect.left < featherRect.right &&
             playerRect.bottom > featherRect.top &&
             playerRect.top < featherRect.bottom) {
-                
-            if (!playerRecentlyHit) {
-                playerLives--;
-                updateLifeBar();
-                playerRecentlyHit = true;
-                setTimeout(() => { playerRecentlyHit = false; }, 350);
-            }
-
-            // Efecto de daño
-            player.style.filter = "brightness(1.5)";
-            setTimeout(() => player.style.filter = "none", 200);
-
+            applyDamageToPlayer();
             feather.element.remove();
             feathers.splice(i, 1);
         }
@@ -367,11 +388,10 @@ function updateEagleLifeBar() {
     } else if (eagleLives === 1) {
         eagleLifeImage.src = 'Resources/First_Boss/vida_1_eagle.png';
     }
-
     if (eagleLives <= 0) {
-        document.getElementById('eagle').style.display = 'none';
-        showDialogue("¡Has derrotado al jefe!");
-        setTimeout(hideDialogue, 3000);
+        eagle.style.display = "none";
+        document.getElementById('eagle-life-bar').style.display = "none"; // Oculta la barra de vida
+        showDialogue("¡Has derrotado al Águila!");
     }
 }
 
@@ -389,11 +409,26 @@ function checkCollision(el1, el2) {
 }
 
 function applyDamageToPlayer() {
-    if (!playerRecentlyDamaged) {
+    if (!playerRecentlyHit && playerLives > 0) {
         playerLives--;
-        updateLifeBar(); 
-        playerRecentlyDamaged = true;
-        setTimeout(() => playerRecentlyDamaged = false, 1000);
+        updateLifeBar();
+        playerRecentlyHit = true;
+
+        // Efecto de parpadeo retro
+        let blinkCount = 0;
+        const blinkInterval = setInterval(() => {
+            player.style.opacity = (player.style.opacity === "1" || player.style.opacity === "") ? "0.3" : "1";
+            blinkCount++;
+            if (blinkCount > 7) { // Parpadea 8 veces (~2 segundos)
+                clearInterval(blinkInterval);
+                player.style.opacity = "1";
+            }
+        }, 250);
+
+        setTimeout(() => {
+            playerRecentlyHit = false;
+            player.style.opacity = "1";
+        }, 2000); // 2 segundos de invulnerabilidad
     }
 }
 
@@ -451,7 +486,7 @@ function movePlayer() {
     if (keysPressed['ArrowUp'] && (!isJumping || isOnPlatform())) {
         velocityY = 15;
         isJumping = true;
-        player.style.backgroundImage = "url('Resources/Player_Jump.png')";
+        player.style.backgroundImage = "url('Resources/Player/Player_Jump.png')";
     }
 
     applyGravity();
@@ -461,12 +496,12 @@ function movePlayer() {
     if (!isAttacking) {
         if (isJumping) {
             player.style.backgroundImage = velocityY > 0 
-                ? "url('Resources/Player_Jump.png')" 
-                : "url('Resources/Player_Fall.png')";
+                ? "url('Resources/Player/Player_Jump.png')" 
+                : "url('Resources/Player/Player_Fall.png')";
         } else if (moving) {
-            player.style.backgroundImage = "url('Resources/Player_Run.png')";
+            player.style.backgroundImage = "url('Resources/Player/Player_Run.png')";
         } else {
-            player.style.backgroundImage = "url('Resources/Player_Idle.png')";
+            player.style.backgroundImage = "url('Resources/Player/Player_Idle.png')";
         }
     }
 }
@@ -529,11 +564,11 @@ function movePuma() {
     if (Math.abs(playerRect.left - pumaRect.left) < 150 && 
         Math.abs(playerRect.bottom - pumaRect.bottom) < 50) {
         isPumaAttacking = true;
-        puma.style.backgroundImage = "url('Resources/panther_atk.png')";
+        puma.style.backgroundImage = "url('Resources/Mobs/panther_atk.png')";
         
         setTimeout(() => {
             isPumaAttacking = false;
-            puma.style.backgroundImage = "url('Resources/panther_idle.png')";
+            puma.style.backgroundImage = "url('Resources/Mobs/panther_idle.png')";
         }, 500);
         return;
     }
@@ -551,12 +586,12 @@ function startAttackSequence() {
 }
 
 function launchFeatherAttack() {
-    const count = 4;
-    const spacing = 40;
-
+    const count = 6;
+    const spacing = 30;
     for (let i = 0; i < count; i++) {
-        createFeather(eagleX, eagleY + i * spacing, -1); // Izquierda
-        createFeather(eagleX + 120, eagleY + i * spacing, 1); // Derecha
+        // Plumas hacia la derecha y la izquierda con ángulos variados
+        feathers.push(new Feather(eagleX + 60, eagleY + i * spacing, Math.PI / 4 + i * 0.1));
+        feathers.push(new Feather(eagleX + 60, eagleY + i * spacing, Math.PI * 3 / 4 - i * 0.1));
     }
 }
 
@@ -587,8 +622,7 @@ function createFeather(x, y, direction) {
         if (hit && playerLives > 0) {
             feather.remove();
             clearInterval(interval);
-            playerLives--;
-            updateLifeBar();
+            applyDamageToPlayer();
         }
 
         // Eliminar si ya salió de pantalla
@@ -604,6 +638,15 @@ function createFeather(x, y, direction) {
 function moveEagleBoss() {
     const eagle = document.getElementById('eagle');
     if (!eagle || eagleLives <= 0) return;
+
+    // Ajustar tamaño del águila según estado
+    if (eagleState === "landing" || eagleState === "vulnerable") {
+        eagle.style.width = "120px";
+        eagle.style.height = "70px";
+    } else {
+        eagle.style.width = "200px";
+        eagle.style.height = "120px";
+    }
 
     // Actualizar proyectiles de plumas
     for (let i = feathers.length - 1; i >= 0; i--) {
@@ -633,44 +676,43 @@ function moveEagleBoss() {
                 eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_atk.png')";
             }
             break;
+            case "dive":
+                // Movimiento hacia el jugador con eje X e Y (más lento)
+                const dx = playerX - eagleX;
+                const dy = eagleLastDiveTargetY - eagleY;
 
-        case "dive":
-            // Movimiento hacia el jugador con eje X e Y
-            const dx = playerX - eagleX;
-            const dy = eagleLastDiveTargetY - eagleY;
-
-            eagleX += dx * 0.1;
-            eagleY += dy * 0.1;
-            // Verificamos colisión con el jugador DURANTE la embestida
-            const eagleRect = eagle.getBoundingClientRect();
-            const playerRect = player.getBoundingClientRect();
-            
-            const eagleHitsPlayer = !(
-                eagleRect.right < playerRect.left ||
-                eagleRect.left > playerRect.right ||
-                eagleRect.bottom < playerRect.top ||
-                eagleRect.top > playerRect.bottom
-            );
-            if (eagleHitsPlayer && !playerRecentlyHit && !eagleDiveHasHit) {
-                playerLives--;
-                updateLifeBar();
-                playerRecentlyHit = true;
-                eagleDiveHasHit = true; // Evita más golpes en esta embestida
-                setTimeout(() => { playerRecentlyHit = false; }, 1000);
-            }
-            // Cuando termina la embestida
-            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-                eagleState = "idle";
-                eagleY = eagleLastDiveTargetY;
-                attackType = "feather"; // alternar
-                lastAttackTime = Date.now();
-                eagleDiveHasHit = false; // Reinicia para la próxima embestida
+                eagleX += dx * 0.05; // velocidad reducida
+                eagleY += dy * 0.05;
+    
+                // Cuando termina la embestida (cerca del jugador)
+                if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                    eagleState = "landing";
+                    eagleY = groundLevel + 20; // Baja al suelo
+                    attackType = "feather";
+                    lastAttackTime = Date.now();
+                    eagleDiveHasHit = false;
                 }
     break;
+
+            case "landing":
+                // Baja al suelo y se vuelve vulnerable por más tiempo
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_burnout.png')";
+                eagleVulnerable = true;
+                eagleCanBeDamaged = true;
+                setTimeout(() => {
+                    eagleVulnerable = false;
+                    eagleCanBeDamaged = false;
+                    eagleState = "idle";
+                    lastAttackTime = Date.now();
+                    attackType = "dive";
+                    eagleY = 200; // Vuelve a su altura original
+                    }, 3500); // 3.5 segundos vulnerable
+                    break;
+
         case "feather_charge":
             if (Date.now() - lastAttackTime > 800) {
                 eagleState = "feather_attack";
-                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_atk_mag.png')";
                 launchFeatherAttack();
                 lastAttackTime = Date.now();
             }
@@ -682,13 +724,12 @@ function moveEagleBoss() {
                 eagleVulnerable = true;
                 eagleCanBeDamaged = true;
                 eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_burnout.png')";
-
                 setTimeout(() => {
                     eagleVulnerable = false;
                     eagleCanBeDamaged = false;
                     eagleState = "idle";
                     lastAttackTime = Date.now();
-                    attackType = "dive"; // alternar
+                    attackType = "dive";
                 }, 2000);
             }
             break;
@@ -817,19 +858,19 @@ function checkAppleCollection() {
 function handlePlayerAttack() {
     if (!isAttacking) {
         isAttacking = true;
-        player.style.backgroundImage = "url('Resources/Player_atk.png')";
+        player.style.backgroundImage = "url('Resources/Player/Player_atk.png')";
 
         setTimeout(() => {
             isAttacking = false;
         
             if (isJumping) {
                 player.style.backgroundImage = velocityY > 0 
-                    ? "url('Resources/Player_Jump.png')" 
-                    : "url('Resources/Player_Fall.png')";
+                    ? "url('Resources/Player/Player_Jump.png')" 
+                    : "url('Resources/Player/Player_Fall.png')";
             } else if (keysPressed['ArrowLeft'] || keysPressed['ArrowRight']) {
-                player.style.backgroundImage = "url('Resources/Player_Run.png')";
+                player.style.backgroundImage = "url('Resources/Player/Player_Run.png')";
             } else {
-                player.style.backgroundImage = "url('Resources/Player_Idle.png')";
+                player.style.backgroundImage = "url('Resources/Player/Player_Idle.png')";
             }
         }, 400); 
     }
@@ -881,7 +922,7 @@ function checkPlayerAttackHitsEnemy() {
                 showDialogue("¡Prepárate para el combate final!");
                 setTimeout(() => {
                     hideDialogue();
-                    startScene3();
+                    startScene2();
                 }, 3000);
             }, 2000);
         } else {
@@ -974,7 +1015,7 @@ function startScene3() {
 
     // Mostrar elementos
     document.getElementById('eagleBoss').style.display = 'block';
-    document.querySelector('.platforms-scene-3').style.display = 'block';
+    document.querySelector('.platforms-scene-3').style.display = 'block'; // <-- Esto muestra las plataformas
     document.getElementById('eagle-life-bar').style.display = 'flex';
     updateEagleLifeBar();
     
@@ -1013,41 +1054,6 @@ function startScene3() {
     lastAttackTime = Date.now();
 }
 
-
-class Feather {
-    constructor(x, y, angle) {
-        this.element = document.createElement('div');
-        this.element.className = 'feather-projectile';
-        this.x = x;
-        this.y = y;
-        this.angle = angle;
-        this.speed = 5;
-        this.gravity = 0.2;
-        this.lifetime = 0;
-        this.element.style.backgroundImage = "url('Resources/First_Boss/feather.png')";
-        this.element.style.width = '32px';
-        this.element.style.height = '32px';
-        this.element.style.position = 'absolute';
-        this.element.style.transform = `rotate(${angle}rad)`;
-        stage.appendChild(this.element);
-    }
-
-    update() {
-        this.lifetime++;
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed + this.gravity * this.lifetime;
-        
-        this.element.style.left = `${this.x}px`;
-        this.element.style.bottom = `${this.y}px`;
-        
-        // Eliminar si sale de pantalla
-        if (this.y > stage.offsetHeight || this.x < 0 || this.x > stageWidth) {
-            this.element.remove();
-            return true;
-        }
-        return false;
-    }
-}
 
 function gameLoop() {
     movePlayer();
@@ -1107,14 +1113,11 @@ setInterval(() => {
     if (scene === 2 && playerLives > 0 && !pumaDefeated) {
         const dx = Math.abs(playerX - pumaX);
         const dy = Math.abs(playerY - pumaY);
-
         if (dx < 100 && dy < 100) {
-            playerLives--;
-            updateLifeBar();
-
-            puma.style.backgroundImage = "url('Resources/panther_atk.png')";
+            applyDamageToPlayer();
+            puma.style.backgroundImage = "url('Resources/Mobs/panther_atk.png')";
             setTimeout(() => {
-                puma.style.backgroundImage = "url('Resources/panther_idle.png')";
+                puma.style.backgroundImage = "url('Resources/Mobs/panther_idle.png')";
             }, 500);
         }
     }
