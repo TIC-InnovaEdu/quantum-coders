@@ -586,12 +586,12 @@ function startAttackSequence() {
 }
 
 function launchFeatherAttack() {
-    const count = 6;
-    const spacing = 30;
+    const count = 4;
+    const spacing = 40;
+    // Plumas hacia la izquierda (-1) y derecha (1)
     for (let i = 0; i < count; i++) {
-        // Plumas hacia la derecha y la izquierda con ángulos variados
-        feathers.push(new Feather(eagleX + 60, eagleY + i * spacing, Math.PI / 4 + i * 0.1));
-        feathers.push(new Feather(eagleX + 60, eagleY + i * spacing, Math.PI * 3 / 4 - i * 0.1));
+        createFeather(eagleX, eagleY + i * spacing, -1); // Izquierda
+        createFeather(eagleX + 120, eagleY + i * spacing, 1); // Derecha
     }
 }
 
@@ -619,10 +619,13 @@ function createFeather(x, y, direction) {
             featherRect.top > playerRect.bottom
         );
 
-        if (hit && playerLives > 0) {
+        if (hit && playerLives > 0 && !playerRecentlyHit) {
             feather.remove();
             clearInterval(interval);
-            applyDamageToPlayer();
+            playerLives--;
+            updateLifeBar();
+            playerRecentlyHit = true;
+            setTimeout(() => { playerRecentlyHit = false; }, 1000);
         }
 
         // Eliminar si ya salió de pantalla
@@ -639,7 +642,7 @@ function moveEagleBoss() {
     const eagle = document.getElementById('eagle');
     if (!eagle || eagleLives <= 0) return;
 
-    // Ajustar tamaño del águila según estado
+    // Ajustar tamaño del águila SOLO en landing/vulnerable
     if (eagleState === "landing" || eagleState === "vulnerable") {
         eagle.style.width = "120px";
         eagle.style.height = "70px";
@@ -676,43 +679,59 @@ function moveEagleBoss() {
                 eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_atk.png')";
             }
             break;
-            case "dive":
-                // Movimiento hacia el jugador con eje X e Y (más lento)
-                const dx = playerX - eagleX;
-                const dy = eagleLastDiveTargetY - eagleY;
 
-                eagleX += dx * 0.05; // velocidad reducida
-                eagleY += dy * 0.05;
-    
-                // Cuando termina la embestida (cerca del jugador)
-                if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-                    eagleState = "landing";
-                    eagleY = groundLevel + 20; // Baja al suelo
-                    attackType = "feather";
-                    lastAttackTime = Date.now();
-                    eagleDiveHasHit = false;
-                }
-    break;
+        case "dive":
+            // Movimiento hacia el jugador con eje X e Y (velocidad BAJA 0.05)
+            const dx = playerX - eagleX;
+            const dy = eagleLastDiveTargetY - eagleY;
 
-            case "landing":
-                // Baja al suelo y se vuelve vulnerable por más tiempo
-                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_burnout.png')";
-                eagleVulnerable = true;
-                eagleCanBeDamaged = true;
-                setTimeout(() => {
-                    eagleVulnerable = false;
-                    eagleCanBeDamaged = false;
-                    eagleState = "idle";
-                    lastAttackTime = Date.now();
-                    attackType = "dive";
-                    eagleY = 200; // Vuelve a su altura original
-                    }, 3500); // 3.5 segundos vulnerable
-                    break;
+            eagleX += dx * 0.05;
+            eagleY += dy * 0.05;
+
+            // Verificamos colisión con el jugador DURANTE la embestida
+            const eagleRect = eagle.getBoundingClientRect();
+            const playerRect = player.getBoundingClientRect();
+            const eagleHitsPlayer = !(
+                eagleRect.right < playerRect.left ||
+                eagleRect.left > playerRect.right ||
+                eagleRect.bottom < playerRect.top ||
+                eagleRect.top > playerRect.bottom
+            );
+            if (eagleHitsPlayer && !playerRecentlyHit && !eagleDiveHasHit) {
+                playerLives--;
+                updateLifeBar();
+                playerRecentlyHit = true;
+                eagleDiveHasHit = true;
+                setTimeout(() => { playerRecentlyHit = false; }, 1000);
+            }
+            // Cuando termina la embestida
+            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                eagleState = "idle";
+                eagleY = eagleLastDiveTargetY;
+                attackType = "feather";
+                lastAttackTime = Date.now();
+                eagleDiveHasHit = false;
+            }
+            break;
+
+        case "landing":
+            eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_burnout.png')";
+            eagleVulnerable = true;
+            eagleCanBeDamaged = true;
+            setTimeout(() => {
+                eagleVulnerable = false;
+                eagleCanBeDamaged = false;
+                eagleState = "idle";
+                lastAttackTime = Date.now();
+                attackType = "dive";
+                eagleY = 200;
+            }, 3500);
+            break;
 
         case "feather_charge":
             if (Date.now() - lastAttackTime > 800) {
                 eagleState = "feather_attack";
-                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_atk_mag.png')";
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_charge.png')";
                 launchFeatherAttack();
                 lastAttackTime = Date.now();
             }
@@ -720,17 +739,11 @@ function moveEagleBoss() {
 
         case "feather_attack":
             if (Date.now() - lastAttackTime > 1000) {
-                eagleState = "vulnerable";
-                eagleVulnerable = true;
-                eagleCanBeDamaged = true;
-                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_burnout.png')";
-                setTimeout(() => {
-                    eagleVulnerable = false;
-                    eagleCanBeDamaged = false;
-                    eagleState = "idle";
-                    lastAttackTime = Date.now();
-                    attackType = "dive";
-                }, 2000);
+                // Ahora el águila baja al suelo y entra en estado vulnerable
+                eagleY = groundLevel + 20;
+                eagleState = "landing";
+                eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
+                lastAttackTime = Date.now();
             }
             break;
     }
@@ -918,11 +931,12 @@ function checkPlayerAttackHitsEnemy() {
 
             showDialogue("¡Has vencido al enemigo!");
 
+            // Transición directa a escena 3, sin volver a mostrar escena 2
             setTimeout(() => {
                 showDialogue("¡Prepárate para el combate final!");
                 setTimeout(() => {
                     hideDialogue();
-                    startScene2();
+                    startScene3(); // <-- Cambio aquí, llama directo a escena 3
                 }, 3000);
             }, 2000);
         } else {
@@ -977,10 +991,14 @@ function startScene2() {
     
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround.png')";
     if (pumaDefeated) {
-        setTimeout(() => {
-            showDialogue("¡Prepárate para el combate final!");
-            setTimeout(startScene3, 3000);
-        }, 2000);
+        // Elimina la transición repetida
+        // Antes:
+        // setTimeout(() => {
+        //     showDialogue("¡Prepárate para el combate final!");
+        //     setTimeout(startScene3, 3000);
+        // }, 2000);
+        // Ahora: NO hacer nada, la transición la maneja checkPlayerAttackHitsEnemy
+        return;
     }
 }
 
