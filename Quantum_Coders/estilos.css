@@ -350,6 +350,12 @@ body {
     position: absolute;
 }
 
+/* Solo burnout se hace pequeño */
+.boss[style*="eagle_burnout.png"] {
+    width: 200px !important;
+    height: 100px !important;
+}
+
 #eagle-life-bar {
     position: absolute;
     top: 10px;
