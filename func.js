@@ -8,6 +8,7 @@ const feathers = [];
 let currentPhase = 1;
 let attacksInCurrentPhase = 0;
 let eagleDiveHasHit = false;
+let hasShield = false;
 
 
 // Constantes del juego
@@ -16,6 +17,12 @@ const groundLevel = 100;
 const stageWidth = 2000; 
 const playerWidth = 100;
 const containerWidth = window.innerWidth;
+
+const abyssRanges = {
+    4: { xStart: 1130, xEnd: 1280 }, // Nivel 4
+    5: { xStart: 1050, xEnd: 1200 }, // Nivel 5 (ajusta según tu diseño)
+    // Agrega más niveles aquí
+};
 
 // Inicialización de sprites
 player.style.backgroundImage = "url('Resources/Player/Player_idle.png')";
@@ -250,6 +257,75 @@ function checkWallCollision() {
     return false;
 }
 
+function checkInstakillAbyss() {
+    if (scene >= 4 && abyssRanges[scene]) {
+        const { xStart, xEnd } = abyssRanges[scene];
+        if (playerY < groundLevel && playerX > xStart && playerX < xEnd) {
+            playerLives = 0;
+            updateLifeBar();
+            showCenterMessage("¡Caíste al abismo!", 2000);
+        }
+    }
+}
+
+function checkRunaCollection() {
+    if (scene >= 4) {
+        const runaId = `runa${scene}`;
+        const runa = document.getElementById(runaId);
+        if (runa && runa.style.display !== 'none') {
+            const playerRect = player.getBoundingClientRect();
+            const runaRect = runa.getBoundingClientRect();
+            const overlap = !(
+                playerRect.right < runaRect.left ||
+                playerRect.left > runaRect.right ||
+                playerRect.bottom < runaRect.top ||
+                playerRect.top > runaRect.bottom
+            );
+            if (overlap) {
+                wisdomPoints += 10;
+                updateWisdomBar();
+                runa.style.display = 'none';
+                showCenterMessage("¡Runa obtenida! +10 sabiduría", 2000);
+
+                // Transición automática al siguiente nivel si existe
+                setTimeout(() => {
+                    showDialogue("¡Nivel completado! Preparando siguiente reto...");
+                    setTimeout(() => {
+                        hideDialogue();
+                        const nextSceneFn = window[`startScene${scene + 1}`];
+                        if (typeof nextSceneFn === "function") nextSceneFn();
+                    }, 3000);
+                }, 2000);
+            }
+        }
+    }
+}
+
+
+function checkAylluRevive() {
+    if (scene >= 4) {
+        const aylluId = `ayllu${scene}`;
+        const aylluScene = document.getElementById(aylluId);
+        if (aylluScene && aylluScene.style.display !== 'none') {
+            const playerRect = player.getBoundingClientRect();
+            const aylluRect = aylluScene.getBoundingClientRect();
+            const overlap = !(
+                playerRect.right < aylluRect.left ||
+                playerRect.left > aylluRect.right ||
+                playerRect.bottom < aylluRect.top ||
+                playerRect.top > aylluRect.bottom
+            );
+            if (overlap && wisdomPoints >= 20 && playerLives === 0) {
+                wisdomPoints -= 20;
+                playerLives = 2;
+                updateLifeBar();
+                updateWisdomBar();
+                showCenterMessage("¡Ayllu te revive! -20 sabiduría", 2500);
+            }
+        }
+    }
+}
+
 class Feather {
     constructor(x, y, angle) {
         this.element = document.createElement('div');
@@ -410,6 +486,14 @@ function checkCollision(el1, el2) {
 
 function applyDamageToPlayer() {
     if (!playerRecentlyHit && playerLives > 0) {
+        if (hasShield) {
+            hasShield = false;
+            player.style.backgroundImage = "url('Resources/Player/Player_Idle.png')";
+            showCenterMessage("¡El escudo te protegió!", 1500);
+            playerRecentlyHit = true;
+            setTimeout(() => { playerRecentlyHit = false; }, 1000);
+            return;
+        }
         playerLives--;
         updateLifeBar();
         playerRecentlyHit = true;
@@ -419,7 +503,7 @@ function applyDamageToPlayer() {
         const blinkInterval = setInterval(() => {
             player.style.opacity = (player.style.opacity === "1" || player.style.opacity === "") ? "0.3" : "1";
             blinkCount++;
-            if (blinkCount > 7) { // Parpadea 8 veces (~2 segundos)
+            if (blinkCount > 7) {
                 clearInterval(blinkInterval);
                 player.style.opacity = "1";
             }
@@ -428,7 +512,7 @@ function applyDamageToPlayer() {
         setTimeout(() => {
             playerRecentlyHit = false;
             player.style.opacity = "1";
-        }, 2000); // 2 segundos de invulnerabilidad
+        }, 2000);
     }
 }
 
@@ -492,6 +576,7 @@ function movePlayer() {
     applyGravity();
 
     playerX = Math.max(0, Math.min(playerX, stageWidth - playerWidth));
+    playerY = Math.max(groundLevel, Math.min(playerY, 600));
 
     if (!isAttacking) {
         if (isJumping) {
@@ -959,6 +1044,31 @@ function checkTriggerCollision() {
 }
 
 
+
+function startIntroScene() {
+    const introDiv = document.getElementById('introText');
+    const continuePrompt = document.getElementById('continuePrompt');
+
+    introDiv.innerHTML = ""; 
+    continuePrompt.style.display = 'none';
+    currentChar = 0;
+
+    writingInterval = setInterval(() => {
+        if (currentChar < introText.length) {
+            let charToAdd = introText[currentChar];
+            if (charToAdd === '\n') {
+                introDiv.innerHTML += '<br>';
+            } else {
+                introDiv.innerHTML += charToAdd;
+            }
+            currentChar++;
+        } else {
+            clearInterval(writingInterval);
+            continuePrompt.style.display = 'block';
+        }
+    }, 40);
+}
+
 function startScene2() {
     hideDialogue();
     scene = 2;
@@ -988,42 +1098,6 @@ function startScene2() {
 
     updateCharacterPosition(player, playerX, playerY);
     updateCharacterPosition(puma, pumaX, pumaY);
-    
-    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround.png')";
-    if (pumaDefeated) {
-        // Elimina la transición repetida
-        // Antes:
-        // setTimeout(() => {
-        //     showDialogue("¡Prepárate para el combate final!");
-        //     setTimeout(startScene3, 3000);
-        // }, 2000);
-        // Ahora: NO hacer nada, la transición la maneja checkPlayerAttackHitsEnemy
-        return;
-    }
-}
-
-function startIntroScene() {
-    const introDiv = document.getElementById('introText');
-    const continuePrompt = document.getElementById('continuePrompt');
-
-    introDiv.innerHTML = ""; 
-    continuePrompt.style.display = 'none';
-    currentChar = 0;
-
-    writingInterval = setInterval(() => {
-        if (currentChar < introText.length) {
-            let charToAdd = introText[currentChar];
-            if (charToAdd === '\n') {
-                introDiv.innerHTML += '<br>';
-            } else {
-                introDiv.innerHTML += charToAdd;
-            }
-            currentChar++;
-        } else {
-            clearInterval(writingInterval);
-            continuePrompt.style.display = 'block';
-        }
-    }, 40);
 }
 
 function startScene3() {
@@ -1070,13 +1144,80 @@ function startScene3() {
 
     // Reinicia el temporizador de ataques
     lastAttackTime = Date.now();
+
+    // Añade transición automática:
+    if (eagleLives <= 0) {
+        setTimeout(() => {
+            hideDialogue();
+            startScene4();
+        }, 3500); // Espera 3.5s tras el mensaje
+    }
 }
 
+function startScene4() {
+    hideDialogue();
+    scene = 4;
+    transitioning = false;
+
+    // Mostrar plataformas del nivel 4
+    document.querySelector('.platforms-scene-4').style.display = 'block';
+    // Ocultar otras escenas
+    document.querySelector('.platforms-scene-3').style.display = 'none';
+    document.querySelector('.platforms-scene-2').style.display = 'none';
+    document.querySelector('.platforms-scene-1').style.display = 'none';
+    document.getElementById('eagleBoss').style.display = 'none';
+
+    // Fondo opcional
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround1.png')";
+
+    // Posición inicial del jugador
+    playerX = 120;
+    playerY = groundLevel + 5;
+    updateCharacterPosition(player, playerX, playerY);
+
+    // Mostrar Ayllu revive
+    const ayllu4 = document.getElementById('ayllu4');
+    if (ayllu4) ayllu4.style.display = 'block';
+
+    // Mostrar runa coleccionable
+    const runa2 = document.getElementById('runa2');
+    if (runa2) runa2.style.display = 'block';
+}
+
+function startScene5() {
+    hideDialogue();
+    scene = 5;
+    transitioning = false;
+
+    // Mostrar plataformas del nivel 5
+    document.querySelector('.platforms-scene-5').style.display = 'block';
+    // Ocultar otras escenas
+    document.querySelector('.platforms-scene-4').style.display = 'none';
+    document.querySelector('.platforms-scene-3').style.display = 'none';
+    document.querySelector('.platforms-scene-2').style.display = 'none';
+    document.querySelector('.platforms-scene-1').style.display = 'none';
+    document.getElementById('eagleBoss').style.display = 'none';
+
+    // Fondo opcional
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround2.png')";
+
+    // Posición inicial del jugador
+    playerX = 100;
+    playerY = groundLevel + 5;
+    updateCharacterPosition(player, playerX, playerY);
+
+    // Mostrar Ayllu revive
+    const ayllu5 = document.getElementById('ayllu5');
+    if (ayllu5) ayllu5.style.display = 'block';
+
+    // Mostrar runa coleccionable
+    const runa5 = document.getElementById('runa5');
+    if (runa5) runa5.style.display = 'block';
+}
 
 function gameLoop() {
     movePlayer();
     checkNPCInteraction();
-    
     if (scene === 1) {
         checkTriggerCollision();
     } else if (scene === 2) {
@@ -1087,20 +1228,31 @@ function gameLoop() {
         checkEagleHit();
         checkAppleCollection();
         checkFeatherCollision(); 
-        
         if (appleSpawnTimer <= 0 && apples.length < 2) {
             if (Math.random() < 0.1) spawnApple();
             appleSpawnTimer = 100;
         } else {
             appleSpawnTimer--;
         }
+    } else if (scene >= 4) { // Aplica a nivel 4 y superiores
+        checkInstakillAbyss();
+        checkRunaCollection();
+        checkAylluRevive();
+        checkShield();
     }
-    
     updatePositions();
     requestAnimationFrame(gameLoop);
 }
 
-
+function checkShield() {
+    if (!hasShield && wisdomPoints >= 30) {
+        hasShield = true;
+        wisdomPoints -= 30;
+        updateWisdomBar();
+        player.style.backgroundImage = "url('Resources/Player/aku_aku_idle.png')";
+        showCenterMessage("¡Escudo activado! Te protege del primer golpe.", 2000);
+    }
+}
 
 function showDialogue(text) {
     if (!document.getElementById('dialogueBox')) {
