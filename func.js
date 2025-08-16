@@ -9,6 +9,8 @@ let currentPhase = 1;
 let attacksInCurrentPhase = 0;
 let eagleDiveHasHit = false;
 let hasShield = false;
+let eagleDefeated = false;
+
 
 
 // Constantes del juego
@@ -673,10 +675,10 @@ function startAttackSequence() {
 function launchFeatherAttack() {
     const count = 4;
     const spacing = 40;
-    // Plumas hacia la izquierda (-1) y derecha (1)
     for (let i = 0; i < count; i++) {
-        createFeather(eagleX, eagleY + i * spacing, -1); // Izquierda
-        createFeather(eagleX + 120, eagleY + i * spacing, 1); // Derecha
+        // Usar eagleX y eagleY como posición de origen
+        createFeather(eagleX, eagleY + i * spacing, -1);
+        createFeather(eagleX + 120, eagleY + i * spacing, 1);
     }
 }
 
@@ -725,6 +727,22 @@ function createFeather(x, y, direction) {
 
 function moveEagleBoss() {
     const eagle = document.getElementById('eagle');
+    // Verificar si el águila ha sido derrotada
+    if (eagleLives <= 0 && scene === 3) {
+        if (!eagleDefeated) { // Asegurarnos que esto solo ocurra una vez
+        eagleDefeated = true;
+        eagle.style.display = 'none';
+        document.getElementById('eagle-life-bar').style.display = 'none';
+        showDialogue("¡Has derrotado al Águila!");
+        // Transición automática después de 3.5 segundos
+        setTimeout(() => {
+            hideDialogue();
+            startScene4();
+        }, 3500);
+    }
+    return; // Salir de la función si el águila está derrotada
+    }
+
     if (!eagle || eagleLives <= 0) return;
 
     // Ajustar tamaño del águila SOLO en landing/vulnerable
@@ -1105,53 +1123,48 @@ function startScene3() {
     scene = 3;
     transitioning = false;
 
-    // Mostrar elementos
-    document.getElementById('eagleBoss').style.display = 'block';
-    document.querySelector('.platforms-scene-3').style.display = 'block'; // <-- Esto muestra las plataformas
-    document.getElementById('eagle-life-bar').style.display = 'flex';
-    updateEagleLifeBar();
-    
-    // Ocultar elementos
-    document.querySelector('.platforms-scene-2').style.display = 'none';
-    puma.style.display = 'none';
-
-    // Resetear estado del águila
+    // Resetear estado completo del águila
+    eagleLives = 7; // Resetear vidas
+    eagleDefeated = false;
     eagleHitsLanded = 0;
     isEagleDown = false;
     eagleState = "idle";
     eagleX = 700;
     eagleY = 200;
     eagleAttackCooldown = 120;
-    
-    // Posición jugador
+
+    // Mostrar elementos de la escena 3
+    document.getElementById('eagleBoss').style.display = 'block';
+    document.querySelector('.platforms-scene-3').style.display = 'block';
+    document.getElementById('eagle-life-bar').style.display = 'flex';
+    updateEagleLifeBar();
+
+    // Asegurar que el águila sea visible
+    const eagle = document.getElementById('eagle');
+    eagle.style.display = 'block';
+    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
+    updateCharacterPosition(eagle, eagleX, eagleY);
+
+    // Ocultar elementos de otras escenas
+    document.querySelector('.platforms-scene-2').style.display = 'none';
+    puma.style.display = 'none';
+
+    // Posición inicial del jugador
     playerX = 100;
     playerY = groundLevel + 5;
-    
     updateCharacterPosition(player, playerX, playerY);
-    updateCharacterPosition(document.getElementById('eagle'), eagleX, eagleY);
-    
-    // Fondo
-    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround3.png')";
-    
-    // Inicializar águila
-    const eagle = document.getElementById('eagle');
-    eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
-    eagle.style.display = 'block';
 
-    // Protege al jugador durante 1.2s al empezar la pelea
+    // Cambiar fondo
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround2.png')";
+
+    // Inmunidad temporal al iniciar
     playerRecentlyHit = true;
     setTimeout(() => { playerRecentlyHit = false; }, 1200);
 
-    // Reinicia el temporizador de ataques
+    // Reiniciar temporizador de ataques
     lastAttackTime = Date.now();
 
-    // Añade transición automática:
-    if (eagleLives <= 0) {
-        setTimeout(() => {
-            hideDialogue();
-            startScene4();
-        }, 3500); // Espera 3.5s tras el mensaje
-    }
+    // Eliminar el bloque if (eagleLives <= 0) ya que ahora se maneja en moveEagleBoss()
 }
 
 function startScene4() {

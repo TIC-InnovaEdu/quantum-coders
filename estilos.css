@@ -142,11 +142,10 @@ body, html {
 
 #floor {
     position: absolute;
-    margin-top: 0px;
-    bottom: 0px;
+    bottom: 0;
     left: 0;
     width: 2000px;
-    height: 120px;
+    height: 100px; /* Reducir altura */
     background: repeating-linear-gradient(
         45deg,
         #5a3b1d,
@@ -157,6 +156,7 @@ body, html {
     border-top: 2px solid #111;
     z-index: 1;
 }
+
 
 
 .scene-trigger {
@@ -304,6 +304,7 @@ body, html {
     border: 2px solid #4e2e1f;
     border-radius: 5px;
     z-index: 3;
+    bottom: 100px; /* Ajustar posición base */
 }
 
 .blocker-wall {
@@ -345,11 +346,13 @@ body, html {
 /* Estilos para el águila */
 .boss {
     width: 200px;
-    height: 200px;
+    height: 120px; /* Altura más realista */
     background-size: contain;
     background-repeat: no-repeat;
     z-index: 10;
     position: absolute;
+    bottom: auto; /* Quitar posición fija */
+    top: auto;
 }
 
 /* Solo burnout se hace pequeño */
@@ -493,4 +496,14 @@ body, html {
 
 #wisdom-points {
     font-weight: bold;
+}
+
+/* Plataformas móviles (nivel 8) */
+.platform.moving {
+    animation: movePlatform 3s infinite alternate ease-in-out;
+}
+
+@keyframes movePlatform {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(50px); }
 }

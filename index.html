@@ -24,10 +24,13 @@
         <div class="background" id="background"></div>
         <div id="stage">
             <div id="floor"></div>
-            <!-- Plataforma flotante -->
+            <!-- Nivel 1 -->
             <div class="platforms-scene-1">
                 
             </div>
+            
+            <!-- Nivel 2 -->
+            
             <!-- Plataformas visibles solo en escena 2 -->
             <div class="platforms-scene-2" style="display: none;">
                 <!-- Plataforma 1 -->
@@ -40,7 +43,9 @@
                 <!-- Plataforma 3 -->
                 <div class="platform" style="left: 900px; bottom: 400px; width: 120px; height: 20px;"></div>
             </div>
-
+            
+            <!-- Nivel 3 -->
+            
             <!--Scenario 3-->
             <div class="platforms-scene-3" style="display: none;">
                 <!-- Plataforma izquierda -->
@@ -67,7 +72,7 @@
                 <!-- Runa coleccionable -->
                 <div class="collectible" id="runa2" style="left: 700px; bottom: 240px; background-image: url('Resources/Items/Runa02.png'); width: 60px; height: 60px;"></div>
                 <!-- Ayllu revive (solo muestra el sprite, la lógica va en JS) -->
-                <div class="companion" id="ayllu4" style="left: 1450px; bottom: 170px; background-image: url('Resources/Totems/Ayllu_Idle.png'); width: 80px; height: 100px;"></div>
+                <div class="companion" id="ayllu4" style="left: 1450px; bottom: 170px; background-image: url('Resources/Totems/Ayllu_idle.png'); width: 80px; height: 100px;"></div>
             </div>
             
             
@@ -85,11 +90,114 @@
                 <!-- Plataforma después del abismo -->
                 <div class="platform" style="left: 1200px; bottom: 180px; width: 160px; height: 20px;"></div>
                 <!-- Runa coleccionable -->
-                <div class="collectible" id="runa5" style="left: 650px; bottom: 240px; background-image: url('Resources/Items/Runa05.png'); width: 60px; height: 60px;"></div>
+                <div class="collectible" id="runa5" style="left: 650px; bottom: 240px; background-image: url('Resources/Items/Runa03.png'); width: 60px; height: 60px;"></div>
                 <!-- Ayllu revive -->
-                <div class="companion" id="ayllu5" style="left: 1350px; bottom: 200px; background-image: url('Resources/Totems/Ayllu_Idle.png'); width: 80px; height: 100px;"></div>
+                <div class="companion" id="ayllu5" style="left: 1350px; bottom: 200px; background-image: url('Resources/Totems/Ayllu_idle.png'); width: 80px; height: 100px;"></div>
             </div>
+            
+            <!-- Nivel 6 -->
+            <div class="platforms-scene-6" style="display: none;">
+                <!-- Plataformas en zigzag -->
+                <div class="platform" style="left: 100px; bottom: 150px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 300px; bottom: 220px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 500px; bottom: 150px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 700px; bottom: 220px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 900px; bottom: 150px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 1100px; bottom: 220px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 1300px; bottom: 150px; width: 120px; height: 20px;"></div>
+                <div class="platform" style="left: 1500px; bottom: 220px; width: 120px; height: 20px;"></div>
+                
+                <!-- Runa coleccionable -->
+                <div class="collectible" id="runa6" style="left: 800px; bottom: 170px; background-image: url('Resources/Items/Runa04.png'); width: 60px; height: 60px;"></div>
+                <!-- Ayllu revive -->
+                <div class="companion" id="ayllu6" style="left: 1600px; bottom: 240px; background-image: url('Resources/Totems/Ayllu_idle.png'); width: 80px; height: 100px;"></div>
+            </div>
+            
+            
+            <!-- Nivel 7 -->
+            <div class="platforms-scene-7" style="display: none;">
+                <!-- Plataformas verticales -->
+                <div class="platform" style="left: 200px; bottom: 100px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 200px; bottom: 200px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 200px; bottom: 300px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 200px; bottom: 400px; width: 80px; height: 20px;"></div>
 
+                <div class="platform" style="left: 800px; bottom: 100px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 800px; bottom: 200px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 800px; bottom: 300px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 800px; bottom: 400px; width: 80px; height: 20px;"></div>
+            
+                <div class="platform" style="left: 1400px; bottom: 100px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 1400px; bottom: 200px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 1400px; bottom: 300px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 1400px; bottom: 400px; width: 80px; height: 20px;"></div>
+    
+                <!-- Runa coleccionable -->
+                <div class="collectible" id="runa7" style="left: 500px; bottom: 350px; background-image: url('Resources/Items/Runa01.png'); width: 60px; height: 60px;"></div>
+    
+                <!-- Ayllu revive -->
+                <div class="companion" id="ayllu7" style="left: 1450px; bottom: 420px; background-image: url('Resources/Totems/Ayllu_idle.png'); width: 80px; height: 100px;"></div>
+            </div>
+            
+            <!-- Nivel 8 -->
+             
+            <div class="platforms-scene-8" style="display: none;">
+                <!-- Plataformas móviles (la lógica de movimiento se implementaría en JS) -->
+                <div class="platform moving" style="left: 200px; bottom: 150px; width: 100px; height: 20px;"></div>
+                <div class="platform moving" style="left: 500px; bottom: 250px; width: 100px; height: 20px;"></div>
+                <div class="platform moving" style="left: 800px; bottom: 350px; width: 100px; height: 20px;"></div>
+                <div class="platform" style="left: 1100px; bottom: 150px; width: 180px; height: 20px;"></div>
+    
+                <!-- Runa coleccionable -->
+                <div class="collectible" id="runa8" style="left: 700px; bottom: 370px; background-image: url('Resources/Items/Runa02.png'); width: 60px; height: 60px;"></div>
+    
+                <!-- Ayllu revive -->
+                <div class="companion" id="ayllu8" style="left: 1300px; bottom: 170px; background-image: url('Resources/Totems/Ayllu_idle.png'); width: 80px; height: 100px;"></div>
+            </div>
+            
+            <!-- Nivel 9 -->
+
+            <div class="platforms-scene-9" style="display: none;">
+                <!-- Plataformas en espiral -->
+                <div class="platform" style="left: 400px; bottom: 100px; width: 200px; height: 20px;"></div>
+                <div class="platform" style="left: 500px; bottom: 200px; width: 150px; height: 20px;"></div>
+                <div class="platform" style="left: 550px; bottom: 300px; width: 100px; height: 20px;"></div>
+                <div class="platform" style="left: 575px; bottom: 400px; width: 50px; height: 20px;"></div>
+    
+                <div class="platform" style="left: 1200px; bottom: 100px; width: 200px; height: 20px;"></div>
+                <div class="platform" style="left: 1100px; bottom: 200px; width: 150px; height: 20px;"></div>
+                <div class="platform" style="left: 1050px; bottom: 300px; width: 100px; height: 20px;"></div>
+                <div class="platform" style="left: 1025px; bottom: 400px; width: 50px; height: 20px;"></div>
+    
+                <!-- Runa coleccionable -->
+                <div class="collectible" id="runa9" style="left: 580px; bottom: 420px; background-image: url('Resources/Items/Runa04.png'); width: 60px; height: 60px;"></div>
+    
+                <!-- Ayllu revive -->
+                <div class="companion" id="ayllu9" style="left: 1030px; bottom: 420px; background-image: url('Resources/Totems/Ayllu_idle.png'); width: 80px; height: 100px;"></div>
+            </div>
+            
+            <!-- Nivel 10 (Final) -->
+
+            <div class="platforms-scene-10" style="display: none;">
+                <!-- Plataformas desafiantes -->
+                <div class="platform" style="left: 100px; bottom: 100px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 250px; bottom: 200px; width: 60px; height: 20px;"></div>
+                <div class="platform" style="left: 400px; bottom: 300px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 600px; bottom: 250px; width: 60px; height: 20px;"></div>
+                <div class="platform" style="left: 800px; bottom: 350px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 1000px; bottom: 200px; width: 60px; height: 20px;"></div>
+                <div class="platform" style="left: 1200px; bottom: 300px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 1400px; bottom: 150px; width: 60px; height: 20px;"></div>
+                <div class="platform" style="left: 1600px; bottom: 250px; width: 80px; height: 20px;"></div>
+                <div class="platform" style="left: 1800px; bottom: 350px; width: 200px; height: 20px;"></div>
+    
+                <!-- Runa final -->
+                <div class="collectible" id="runa10" style="left: 1850px; bottom: 370px; background-image: url('Resources/Items/Runa10.png'); width: 80px; height: 80px;"></div>
+    
+                <!-- Ayllu revive -->
+                <div class="companion" id="ayllu10" style="left: 1750px; bottom: 370px; background-image: url('Resources/Totems/Ayllu_idle.png'); width: 80px; height: 100px;"></div>
+            </div>
+            
             
             <div id="eagleBoss" style="display: none;">
                 <div class="boss" id="eagle"></div>
