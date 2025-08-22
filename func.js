@@ -139,6 +139,7 @@ function updatePositions() {
     if (scene === 1) {
         updateCharacterPosition(ayllu,aylluX,aylluY);
         updateCharacterPosition(trigger, triggerX, triggerY);
+
     } else if (scene === 2) {
         updateCharacterPosition(puma, pumaX, pumaY);
     } else if (scene === 3) {
@@ -259,17 +260,6 @@ function checkWallCollision() {
         }
     }
     return false;
-}
-
-function checkInstakillAbyss() {
-    if (scene >= 4 && abyssRanges[scene]) {
-        const { xStart, xEnd } = abyssRanges[scene];
-        if (playerY < groundLevel && playerX > xStart && playerX < xEnd) {
-            playerLives = 0;
-            updateLifeBar();
-            showCenterMessage("¡Caíste al abismo!", 2000);
-        }
-    }
 }
 
 function checkRunaCollection() {
@@ -1097,6 +1087,7 @@ function startScene2() {
     ayllu.style.display = 'none';
     trigger.style.display = 'none';
 
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/fa_floor.png')";
     // Cambiar fondo
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround.png')";
     // Resetear posiciones
@@ -1147,7 +1138,7 @@ function startScene3() {
     playerY = groundLevel + 5;
     updateCharacterPosition(player, playerX, playerY);
 
-    
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/castle_floor.png')";
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround2.png')";
 
     playerRecentlyHit = true;
@@ -1173,6 +1164,7 @@ function startScene4() {
 
     // Fondo opcional
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background3_5.png')";
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/forest_floor.png')";
 
     // Posición inicial del jugador
     playerX = 120;
@@ -1200,6 +1192,7 @@ function startScene5() {
 
     // Fondo opcional
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background3_5.png')";
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/forest_floor.png')";
 
     // Posición inicial del jugador
     playerX = 100;
@@ -1227,6 +1220,7 @@ function startScene6() {
 
     // Fondo opcional
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/sand_floor.png')";
 
     // Posición inicial del jugador
     playerX = 120;
@@ -1252,6 +1246,7 @@ function startScene7() {
     document.querySelector('.platforms-scene-1').style.display = 'none';
 
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/sand_floor.png')";
 
     playerX = 120;
     playerY = groundLevel + 5;
@@ -1276,6 +1271,7 @@ function startScene8() {
     document.querySelector('.platforms-scene-1').style.display = 'none';
 
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/sand_floor.png')";
 
     playerX = 120;
     playerY = groundLevel + 5;
@@ -1435,6 +1431,7 @@ function checkQuizAnswer() {
 document.getElementById("playButton").addEventListener("click", () => {
     document.getElementById("menu").style.display = "none";
     document.getElementById("introScene").style.display = "flex";
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/fa_floor.png')";
     scene = 0;  
     startIntroScene(); 
     updateLifeBar();
