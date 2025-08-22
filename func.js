@@ -1132,7 +1132,7 @@ function startScene3() {
     transitioning = false;
 
     // Resetear estado completo del águila
-    eagleLives = 7; // Resetear vidas
+    eagleLives = 7; 
     eagleDefeated = false;
     eagleHitsLanded = 0;
     isEagleDown = false;
@@ -1141,38 +1141,33 @@ function startScene3() {
     eagleY = 200;
     eagleAttackCooldown = 120;
 
-    // Mostrar elementos de la escena 3
     document.getElementById('eagleBoss').style.display = 'block';
     document.querySelector('.platforms-scene-3').style.display = 'block';
     document.getElementById('eagle-life-bar').style.display = 'flex';
     updateEagleLifeBar();
 
-    // Asegurar que el águila sea visible
     const eagle = document.getElementById('eagle');
     eagle.style.display = 'block';
     eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
     updateCharacterPosition(eagle, eagleX, eagleY);
 
-    // Ocultar elementos de otras escenas
+   
     document.querySelector('.platforms-scene-2').style.display = 'none';
     puma.style.display = 'none';
 
-    // Posición inicial del jugador
     playerX = 100;
     playerY = groundLevel + 5;
     updateCharacterPosition(player, playerX, playerY);
 
-    // Cambiar fondo
+    
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround2.png')";
 
-    // Inmunidad temporal al iniciar
     playerRecentlyHit = true;
     setTimeout(() => { playerRecentlyHit = false; }, 1200);
 
     // Reiniciar temporizador de ataques
     lastAttackTime = Date.now();
 
-    // Eliminar el bloque if (eagleLives <= 0) ya que ahora se maneja en moveEagleBoss()
 }
 
 function startScene4() {
@@ -1189,7 +1184,7 @@ function startScene4() {
     document.getElementById('eagleBoss').style.display = 'none';
 
     // Fondo opcional
-    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround1.png')";
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background3_5.png')";
 
     // Posición inicial del jugador
     playerX = 120;
@@ -1219,7 +1214,7 @@ function startScene5() {
     document.getElementById('eagleBoss').style.display = 'none';
 
     // Fondo opcional
-    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround2.png')";
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background3_5.png')";
 
     // Posición inicial del jugador
     playerX = 100;
@@ -1404,4 +1399,7 @@ document.getElementById("playButton").addEventListener("click", () => {
 
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
+});stener("click", () => {
+  window.close();
 });
+
