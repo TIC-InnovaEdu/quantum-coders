@@ -318,13 +318,10 @@ body, html {
     position: absolute;
     width: 50px;
     height: 200px;
-    background: #523521;
-    border: 2px solid rgb(149, 97, 1); 
-    border-radius: 4px;
+    background: transparent !important; 
+    border: none !important;
+    box-shadow: none !important; 
     z-index: 3;
-    /* Forzar visibilidad */
-    box-shadow: 0 0 0 3px rgb(130, 60, 0);
-    background-color: rgba(0, 255, 255, 0.3) !important;
 }
 
 .companion {
@@ -506,4 +503,134 @@ body, html {
 @keyframes movePlatform {
     0% { transform: translateY(0); }
     100% { transform: translateY(50px); }
+}
+
+#runa4 {
+    left: 1300px;
+    bottom: 250px;
+    background-image: url('Resources/Items/Runa02.png');
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 99;
+}
+
+#runa5 {
+    left: 1300px;
+    bottom: 250px;
+    background-image: url('Resources/Items/Runa03.png');
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+#runa6 {
+    left: 800px;
+    bottom: 170px;
+    background-image: url('Resources/Items/Runa04.png');
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+#runa7 {
+    left: 500px;
+    bottom: 350px;
+    background-image: url('Resources/Items/Runa01.png');
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+#runa8 {
+    left: 700px;
+    bottom: 370px;
+    background-image: url('Resources/Items/Runa02.png');
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+
+#ayllu4 {
+    left: 1450px;
+    bottom: 170px;
+    background-image: url('Resources/Totems/Ayllu_idle.png');
+    width: 80px;
+    height: 100px;
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+#ayllu5 {
+    position: absolute;
+    left: 1350px;
+    bottom: 200px;
+    background-image: url('Resources/Totems/Ayllu_idle.png');
+    width: 80px;
+    height: 100px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+#ayllu6 {
+    position: absolute;
+    left: 1600px;
+    bottom: 240px;
+    background-image: url('Resources/Totems/Ayllu_idle.png');
+    width: 80px;
+    height: 100px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+#ayllu7 {
+    position: absolute;
+    left: 1450px;
+    bottom: 420px;
+    background-image: url('Resources/Totems/Ayllu_idle.png');
+    width: 80px;
+    height: 100px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+#ayllu8 {
+    position: absolute;
+    left: 1300px;
+    bottom: 170px;
+    background-image: url('Resources/Totems/Ayllu_idle.png');
+    width: 80px;
+    height: 100px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 4;
+}
+
+.collectible {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    display: none; 
 }
