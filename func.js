@@ -20,11 +20,6 @@ const stageWidth = 2000;
 const playerWidth = 100;
 const containerWidth = window.innerWidth;
 
-const abyssRanges = {
-    4: { xStart: 1130, xEnd: 1280 }, // Nivel 4
-    5: { xStart: 1050, xEnd: 1200 }, // Nivel 5 (ajusta según tu diseño)
-    // Agrega más niveles aquí
-};
 
 // Inicialización de sprites
 player.style.backgroundImage = "url('Resources/Player/Player_idle.png')";
@@ -310,30 +305,6 @@ function checkRunaCollection() {
     }
 }
 
-
-function checkAylluRevive() {
-    if (scene >= 4) {
-        const aylluId = `ayllu${scene}`;
-        const aylluScene = document.getElementById(aylluId);
-        if (aylluScene && aylluScene.style.display !== 'none') {
-            const playerRect = player.getBoundingClientRect();
-            const aylluRect = aylluScene.getBoundingClientRect();
-            const overlap = !(
-                playerRect.right < aylluRect.left ||
-                playerRect.left > aylluRect.right ||
-                playerRect.bottom < aylluRect.top ||
-                playerRect.top > aylluRect.bottom
-            );
-            if (overlap && wisdomPoints >= 20 && playerLives === 0) {
-                wisdomPoints -= 20;
-                playerLives = 2;
-                updateLifeBar();
-                updateWisdomBar();
-                showCenterMessage("¡Ayllu te revive! -20 sabiduría", 2500);
-            }
-        }
-    }
-}
 
 class Feather {
     constructor(x, y, angle) {
@@ -913,9 +884,6 @@ function checkEagleHit() {
 }
 
 
-
-
-
 // Sistema de manzanas (corregido)
 function spawnApple() {
     // Verificar que la ruta sea correcta
@@ -1058,6 +1026,26 @@ function checkPlayerAttackHitsEnemy() {
     }
 }
 
+function checkQuicksandCollision() {
+    const quicksand = document.getElementById(`quicksand${scene}`);
+    if (!quicksand) return;
+
+    const playerRect = player.getBoundingClientRect();
+    const quicksandRect = quicksand.getBoundingClientRect();
+
+    const overlap = !(
+        playerRect.right < quicksandRect.left ||
+        playerRect.left > quicksandRect.right ||
+        playerRect.bottom < quicksandRect.top ||
+        playerRect.top > quicksandRect.bottom
+    );
+
+    if (overlap) {
+        playerLives = 0; 
+        updateLifeBar();
+        showCenterMessage("¡Caíste en arenas movedizas!", 2000);
+    }
+}
 
 function checkTriggerCollision() {
     if (playerX > triggerX && !transitioning && talkedToNPC) {
@@ -1191,10 +1179,7 @@ function startScene4() {
     playerY = groundLevel + 5;
     updateCharacterPosition(player, playerX, playerY);
 
-    // Mostrar Ayllu revive
-    const ayllu4 = document.getElementById('ayllu4');
-    if (ayllu4) ayllu4.style.display = 'block';
-
+    document.getElementById("ayllu-warning").style.display = "flex";
     showRunaForScene();
 
 }
@@ -1221,14 +1206,84 @@ function startScene5() {
     playerY = groundLevel + 5;
     updateCharacterPosition(player, playerX, playerY);
 
-    // Mostrar Ayllu revive
-    const ayllu5 = document.getElementById('ayllu5');
-    if (ayllu5) ayllu5.style.display = 'block';
-
     showRunaForScene();
-
+    document.getElementById("ayllu-warning").style.display = "none";
 }
 
+function startScene6() {
+    hideDialogue();
+    scene = 6;
+    transitioning = false;
+
+    // Mostrar plataformas del nivel 6
+    document.querySelector('.platforms-scene-6').style.display = 'block';
+    // Ocultar otras escenas
+    document.querySelector('.platforms-scene-5').style.display = 'none';
+    document.querySelector('.platforms-scene-4').style.display = 'none';
+    document.querySelector('.platforms-scene-3').style.display = 'none';
+    document.querySelector('.platforms-scene-2').style.display = 'none';
+    document.querySelector('.platforms-scene-1').style.display = 'none';
+    document.getElementById('eagleBoss').style.display = 'none';
+
+    // Fondo opcional
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
+
+    // Posición inicial del jugador
+    playerX = 120;
+    playerY = groundLevel + 5;
+    updateCharacterPosition(player, playerX, playerY);
+
+    // Mostrar runa correspondiente
+    showRunaForScene();
+    document.getElementById("ayllu-warning").style.display = "none";
+}
+
+function startScene7() {
+    hideDialogue();
+    scene = 7;
+    transitioning = false;
+
+    document.querySelector('.platforms-scene-7').style.display = 'block';
+    document.querySelector('.platforms-scene-6').style.display = 'none';
+    document.querySelector('.platforms-scene-5').style.display = 'none';
+    document.querySelector('.platforms-scene-4').style.display = 'none';
+    document.querySelector('.platforms-scene-3').style.display = 'none';
+    document.querySelector('.platforms-scene-2').style.display = 'none';
+    document.querySelector('.platforms-scene-1').style.display = 'none';
+
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
+
+    playerX = 120;
+    playerY = groundLevel + 5;
+    updateCharacterPosition(player, playerX, playerY);
+
+    showRunaForScene();
+    document.getElementById("ayllu-warning").style.display = "none";
+}
+
+function startScene8() {
+    hideDialogue();
+    scene = 8;
+    transitioning = false;
+
+    document.querySelector('.platforms-scene-8').style.display = 'block';
+    document.querySelector('.platforms-scene-7').style.display = 'none';
+    document.querySelector('.platforms-scene-6').style.display = 'none';
+    document.querySelector('.platforms-scene-5').style.display = 'none';
+    document.querySelector('.platforms-scene-4').style.display = 'none';
+    document.querySelector('.platforms-scene-3').style.display = 'none';
+    document.querySelector('.platforms-scene-2').style.display = 'none';
+    document.querySelector('.platforms-scene-1').style.display = 'none';
+
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
+
+    playerX = 120;
+    playerY = groundLevel + 5;
+    updateCharacterPosition(player, playerX, playerY);
+
+    showRunaForScene();
+    document.getElementById("ayllu-warning").style.display = "none";
+}
 
 
 function gameLoop() {
@@ -1251,24 +1306,14 @@ function gameLoop() {
             appleSpawnTimer--;
         }
     } else if (scene >= 4) { // Aplica a nivel 4 y superiores
-        checkInstakillAbyss();
+        checkQuicksandCollision();
         checkRunaCollection();
-        checkAylluRevive();
-        checkShield();
     }
     updatePositions();
     requestAnimationFrame(gameLoop);
 }
 
-function checkShield() {
-    if (!hasShield && wisdomPoints >= 30) {
-        hasShield = true;
-        wisdomPoints -= 30;
-        updateWisdomBar();
-        player.style.backgroundImage = "url('Resources/Player/aku_aku_idle.png')";
-        showCenterMessage("¡Escudo activado! Te protege del primer golpe.", 2000);
-    }
-}
+
 
 function showDialogue(text) {
     if (!document.getElementById('dialogueBox')) {
@@ -1399,7 +1444,6 @@ document.getElementById("playButton").addEventListener("click", () => {
 
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
-});stener("click", () => {
-  window.close();
 });
+
 
