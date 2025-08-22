@@ -128,6 +128,10 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+function showRunaForScene() {
+    const runa = document.getElementById(`runa${scene}`);
+    if (runa) runa.style.display = 'block';
+}
 
 
 function updateCharacterPosition(el, x, y) {
@@ -151,12 +155,15 @@ function applyGravity() {
     velocityY -= gravity;
     playerY += velocityY;
 
-    const platforms = scene === 3
-        ? document.querySelectorAll('.platforms-scene-3 .platform')
-        : scene === 2
-        ? document.querySelectorAll('.platforms-scene-2 .platform')
-        : document.querySelectorAll('.platforms-scene-1 .platform');
-    
+    const platforms =
+        scene === 3 ? document.querySelectorAll('.platforms-scene-3 .platform') :
+        scene === 2 ? document.querySelectorAll('.platforms-scene-2 .platform') :
+        scene === 4 ? document.querySelectorAll('.platforms-scene-4 .platform') :
+        scene === 5 ? document.querySelectorAll('.platforms-scene-5 .platform') :
+        scene === 6 ? document.querySelectorAll('.platforms-scene-6 .platform') :
+        scene === 7 ? document.querySelectorAll('.platforms-scene-7 .platform') :
+        scene === 8 ? document.querySelectorAll('.platforms-scene-8 .platform') :
+        document.querySelectorAll('.platforms-scene-1 .platform');
     let landedOnPlatform = false;
 
     for (const platform of platforms) {
@@ -377,6 +384,7 @@ function checkFeatherCollision() {
         }
     }
 }
+
 function checkNPCInteraction() {
     const playerRect = player.getBoundingClientRect();
     const npcRect = ayllu.getBoundingClientRect();
@@ -468,7 +476,7 @@ function updateEagleLifeBar() {
     }
     if (eagleLives <= 0) {
         eagle.style.display = "none";
-        document.getElementById('eagle-life-bar').style.display = "none"; // Oculta la barra de vida
+        document.getElementById('eagle-life-bar').style.display = "none"; 
         showDialogue("¡Has derrotado al Águila!");
     }
 }
@@ -1192,9 +1200,8 @@ function startScene4() {
     const ayllu4 = document.getElementById('ayllu4');
     if (ayllu4) ayllu4.style.display = 'block';
 
-    // Mostrar runa coleccionable
-    const runa2 = document.getElementById('runa2');
-    if (runa2) runa2.style.display = 'block';
+    showRunaForScene();
+
 }
 
 function startScene5() {
@@ -1223,10 +1230,11 @@ function startScene5() {
     const ayllu5 = document.getElementById('ayllu5');
     if (ayllu5) ayllu5.style.display = 'block';
 
-    // Mostrar runa coleccionable
-    const runa5 = document.getElementById('runa5');
-    if (runa5) runa5.style.display = 'block';
+    showRunaForScene();
+
 }
+
+
 
 function gameLoop() {
     movePlayer();
