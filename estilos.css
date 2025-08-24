@@ -196,15 +196,40 @@ body, html {
 #gameOverScreen {
     position: absolute;
     top: 50%;
-    left: 50%;
+    left: 40%; 
     transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.85); 
     color: white;
     padding: 40px;
     border-radius: 20px;
     text-align: center;
     font-size: 24px;
-    z-index: 999;
+    z-index: 99; 
+    border: 5px solid yellow; 
+    box-shadow: 0 0 20px yellow; 
+    animation: fadeIn 1s ease-in-out; 
+}
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0); 
+    z-index: 98;
+    pointer-events: none; 
+    transition: background 2s ease-in-out;
+}
+
+/* Animación para oscurecer la pantalla */
+@keyframes fadeIn {
+    from {
+        background: rgba(0, 0, 0, 0);
+    }
+    to {
+        background: rgba(0, 0, 0, 0.85);
+    }
 }
 
 #centerMessage {
@@ -298,7 +323,16 @@ body, html {
     border: 2px solid #4e2e1f;
     border-radius: 5px;
     z-index: 3;
-    bottom: 100px; /* Ajustar posición base */
+    bottom: 100px; 
+}
+
+.platform.green {
+    position: absolute;
+    background: #195704c0;
+    border: 2px solid #02440a;
+    border-radius: 5px;
+    z-index: 3;
+    bottom: 100px; 
 }
 
 .blocker-wall {
@@ -495,8 +529,8 @@ body, html {
 }
 
 @keyframes movePlatform {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(50px); }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(50px); }
 }
 
 #runa4 {
@@ -508,7 +542,7 @@ body, html {
     position: absolute;
     background-size: contain;
     background-repeat: no-repeat;
-    z-index: 99;
+    z-index: 10;
 }
 
 #runa5 {
@@ -630,6 +664,7 @@ body, html {
     max-width: 400px;
     text-align: center;
 }
+
 
 
 
