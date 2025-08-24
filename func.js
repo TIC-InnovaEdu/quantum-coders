@@ -60,18 +60,22 @@ const runaQuizzes = {
   4: { 
     question: "¿Quién fue el primer Inca del Tahuantinsuyo?",
     options: ["Manco Cápac", "Atahualpa", "Rumiñahui"],
-    correct: 0
+    correct: 0,
+    narration: "Manco Cápac, según la leyenda, fue el primer Inca y fundador del Tahuantinsuyo, la gran civilización andina."
   },
   5: {
     question: "¿Cuál fue la capital del Imperio Inca?",
     options: ["Quito", "Cusco", "Cajamarca"],
-    correct: 1
+    correct: 1,
+    narration: "Cusco fue la capital del Imperio Inca, un centro político, militar y cultural de gran importancia."
   },
   6: {
   question: "¿Qué líder indígena ecuatoriano resistió contra los españoles tras la muerte de Atahualpa?",
   options: ["Huayna Cápac", "Rumiñahui", "Túpac Yupanqui"],
-  correct: 1
+  correct: 1,
+  narration: "Rumiñahui fue un líder indígena que resistió valientemente contra los conquistadores españoles tras la captura y ejecución de Atahualpa."
   },
+
   7: {
   question: "¿Qué estrategia militar clave utilizó Francisco Pizarro en la captura de Atahualpa en Cajamarca?",
   options: [
@@ -79,8 +83,13 @@ const runaQuizzes = {
     "Asedio prolongado a la ciudad",
     "Negociación diplomática con traductores"
   ],
-  correct: 1
+  correct: 0,
+  narration:"El 16 de noviembre de 1532, Pizarro ejecutó una audaz emboscada en Cajamarca. Ocultó sus jinetes y soldados en los edificios alrededor de la plaza, "
+  + "mientras Atahualpa ingresaba con miles de seguidores desarmados. Tras el fallido intento de negociación del fraile Vicente de Valverde, "
+  + "los españoles cargaron con caballería y dispararon arcabuces causando pánico masivo. La superioridad tecnológica como las armas de acero y caballos junto con "
+  + "el factor sorpresa permitieron capturar al Inca en minutos, un evento que marcó el colapso del Tahuantinsuyo."
   },
+  
   8: {
   question: "Además del botín de oro y plata, ¿qué objetivo estratégico perseguían los españoles al conquistar el Imperio Inca?",
   options: [
@@ -88,7 +97,8 @@ const runaQuizzes = {
     "Desarticular el sistema de creencias inca",
     "Establecer una ruta hacia el Amazonas"
   ],
-  correct: 2 
+  correct: 2,
+  narration: "Los españoles buscaban establecer rutas comerciales y de exploración hacia la región amazónica, además de obtener riquezas."
   }
 };
 const correctAnswerIndex = 1; 
@@ -300,15 +310,35 @@ function checkWallCollision() {
     return false;
 }
 
+function showRunaNarration(text, onFinish) {
+  const introScene = document.getElementById("introScene");
+  const introText = document.getElementById("introText");
+  const continuePrompt = document.getElementById("continuePrompt");
+
+  introText.textContent = text;
+  introScene.style.display = "flex";
+  continuePrompt.style.display = "block";
+
+  function handleKey(e) {
+    if (e.key.toLowerCase() === "b") {
+      introScene.style.display = "none";
+      document.removeEventListener("keydown", handleKey);
+      if (typeof onFinish === "function") onFinish();
+    }
+  }
+
+  document.addEventListener("keydown", handleKey);
+}
+
+
 function showRunaQuiz(runaId) {
   const quiz = runaQuizzes[runaId];
-  if (!quiz) return; // si no hay pregunta definida
+  if (!quiz) return; 
 
   const container = document.getElementById("runa-quiz-container");
   const questionElem = document.getElementById("runa-quiz-question");
   const optionsElem = document.getElementById("runa-quiz-options");
 
-  // limpiar
   optionsElem.innerHTML = "";
   questionElem.textContent = quiz.question;
 
@@ -318,17 +348,27 @@ function showRunaQuiz(runaId) {
     li.classList.add("runa-option");
     li.onclick = () => {
       container.style.display = "none";
+      let message = "";
+
       if (idx === quiz.correct) {
         wisdomPoints += 10;
         updateWisdomBar();
-        showCenterMessage("¡Correcto! +10 Sabiduría", 2000);
+        message = "¡Correcto! +10 Sabiduría";
       } else {
-        showCenterMessage("Respuesta incorrecta...", 2000);
+        message = "Respuesta incorrecta...";
       }
-      // avanzar a siguiente escena después de contestar
+
+      showCenterMessage(message, 2000);
+
+      // mostrar narración obligatoria antes de cambiar escena
       setTimeout(() => {
-        const nextSceneFn = window[`startScene${scene + 1}`];
-        if (typeof nextSceneFn === "function") nextSceneFn();
+        showRunaNarration(
+          quiz.narration || "Un fragmento de sabiduría ancestral se revela...",
+          () => {
+            const nextSceneFn = window[`startScene${scene + 1}`];
+            if (typeof nextSceneFn === "function") nextSceneFn();
+          }
+        );
       }, 2200);
     };
     optionsElem.appendChild(li);
@@ -1519,3 +1559,4 @@ document.getElementById("playButton").addEventListener("click", () => {
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
+
