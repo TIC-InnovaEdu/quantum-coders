@@ -48,6 +48,7 @@ let quizActive = false;
 let selectedOptionIndex = 0;
 let wisdomPoints = 0;
 
+
 // Configuración de la pregunta
 const quizQuestionText = "¿En qué año comenzó la invasión española al Tahuantinsuyo?";
 const quizOptions = [
@@ -71,6 +72,8 @@ let scene = null;
 let transitioning = false;
 let playerLives = 4;
 let playerRecentlyDamaged = false;
+let playerLastAttackTime = 0;    
+let playerAttackCooldown = 1000;  
 
 // Variables del águila
 let eagleX = 1200;
@@ -487,11 +490,18 @@ function applyDamageToPlayer() {
     }
 }
 
-
 function showGameOver() {
-    document.getElementById('gameOverScreen').style.display = 'block';
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const overlay = document.getElementById('overlay');
+
+    // Mostrar el mensaje de Game Over
+    gameOverScreen.style.display = 'block';
+    gameOverScreen.innerHTML = "¡Game Over! Has perdido todas tus vidas.";
+
+    // Oscurecer toda la pantalla
+    overlay.style.background = "rgba(0, 0, 0, 0.85)";
     setTimeout(() => {
-        location.reload(); 
+        location.reload();
     }, 3000);
 }
 
@@ -539,7 +549,7 @@ function movePlayer() {
     }
 
     if (keysPressed['ArrowUp'] && (!isJumping || isOnPlatform())) {
-        velocityY = 15;
+        velocityY = 12;
         isJumping = true;
         player.style.backgroundImage = "url('Resources/Player/Player_Jump.png')";
     }
@@ -938,25 +948,30 @@ function checkAppleCollection() {
 
 
 function handlePlayerAttack() {
-    if (!isAttacking) {
-        isAttacking = true;
-        player.style.backgroundImage = "url('Resources/Player/Player_atk.png')";
+    const now = performance.now(); 
+    //respeta cooldown
+    if (now - playerLastAttackTime < playerAttackCooldown) return;
+    isAttacking = true;
+    playerLastAttackTime = now;
+    player.style.backgroundImage = "url('Resources/Player/Player_atk.png')";
+    const attackWindow = 200;
 
-        setTimeout(() => {
-            isAttacking = false;
-        
-            if (isJumping) {
-                player.style.backgroundImage = velocityY > 0 
-                    ? "url('Resources/Player/Player_Jump.png')" 
-                    : "url('Resources/Player/Player_Fall.png')";
-            } else if (keysPressed['ArrowLeft'] || keysPressed['ArrowRight']) {
-                player.style.backgroundImage = "url('Resources/Player/Player_Run.png')";
-            } else {
-                player.style.backgroundImage = "url('Resources/Player/Player_Idle.png')";
-            }
-        }, 400); 
-    }
+    // Desactiva "isAttacking"
+    setTimeout(() => {
+        isAttacking = false;
+
+        if (isJumping) {
+            player.style.backgroundImage = velocityY > 0 
+                ? "url('Resources/Player/Player_Jump.png')" 
+                : "url('Resources/Player/Player_Fall.png')";
+        } else if (keysPressed['ArrowLeft'] || keysPressed['ArrowRight']) {
+            player.style.backgroundImage = "url('Resources/Player/Player_Run.png')";
+        } else {
+            player.style.backgroundImage = "url('Resources/Player/Player_Idle.png')";
+        }
+    }, attackWindow);
 }
+
 
 
 function checkPlayerAttackHitsEnemy() {
@@ -1033,7 +1048,6 @@ function checkQuicksandCollision() {
     if (overlap) {
         playerLives = 0; 
         updateLifeBar();
-        showCenterMessage("¡Caíste en arenas movedizas!", 2000);
     }
 }
 
@@ -1270,8 +1284,8 @@ function startScene8() {
     document.querySelector('.platforms-scene-2').style.display = 'none';
     document.querySelector('.platforms-scene-1').style.display = 'none';
 
-    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
-    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/sand_floor.png')";
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background_8.png')";
+    document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/castle_floor.png')";
 
     playerX = 120;
     playerY = groundLevel + 5;
@@ -1442,5 +1456,6 @@ document.getElementById("playButton").addEventListener("click", () => {
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
+
 
 
