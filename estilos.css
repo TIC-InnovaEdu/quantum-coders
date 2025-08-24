@@ -534,7 +534,7 @@ body, html {
 }
 
 #runa4 {
-    left: 1300px;
+    left: 1390px;
     bottom: 250px;
     background-image: url('Resources/Items/Runa02.png');
     width: 60px;
@@ -558,8 +558,8 @@ body, html {
 }
 
 #runa6 {
-    left: 800px;
-    bottom: 170px;
+    left: 1339px;
+    bottom: 190px;
     background-image: url('Resources/Items/Runa04.png');
     width: 60px;
     height: 60px;
@@ -570,8 +570,8 @@ body, html {
 }
 
 #runa7 {
-    left: 500px;
-    bottom: 350px;
+    left: 1420px;
+    bottom: 250px;
     background-image: url('Resources/Items/Runa01.png');
     width: 60px;
     height: 60px;
@@ -582,8 +582,8 @@ body, html {
 }
 
 #runa8 {
-    left: 700px;
-    bottom: 370px;
+    left: 1320px;
+    bottom: 490px;
     background-image: url('Resources/Items/Runa02.png');
     width: 60px;
     height: 60px;
