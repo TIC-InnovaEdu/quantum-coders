@@ -666,7 +666,7 @@ body, html {
 }
 
 
-/* Quiz de Runa */
+/* === Quiz de Runa === */
 #runa-quiz-container {
   position: fixed;
   top: 0; left: 0;
@@ -711,3 +711,5 @@ body, html {
   background: #ffcc66;
   font-weight: bold;
 }
+
+
