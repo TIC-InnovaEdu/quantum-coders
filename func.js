@@ -900,8 +900,8 @@ function spawnApple() {
     
     apple.style.left = `${x}px`;
     apple.style.bottom = `${y}px`;
-    apple.style.width = '40px';
-    apple.style.height = '40px';
+    apple.style.width = '60px';
+    apple.style.height = '60px';
     apple.style.position = 'absolute';
     apple.style.backgroundSize = 'contain';
     apple.style.backgroundRepeat = 'no-repeat';
@@ -1456,6 +1456,5 @@ document.getElementById("playButton").addEventListener("click", () => {
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
-
 
 
