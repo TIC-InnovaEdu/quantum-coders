@@ -56,6 +56,41 @@ const quizOptions = [
     "1532", //correcta
     "1822"
 ];
+const runaQuizzes = {
+  4: { 
+    question: "¿Quién fue el primer Inca del Tahuantinsuyo?",
+    options: ["Manco Cápac", "Atahualpa", "Rumiñahui"],
+    correct: 0
+  },
+  5: {
+    question: "¿Cuál fue la capital del Imperio Inca?",
+    options: ["Quito", "Cusco", "Cajamarca"],
+    correct: 1
+  },
+  6: {
+  question: "¿Qué líder indígena ecuatoriano resistió contra los españoles tras la muerte de Atahualpa?",
+  options: ["Huayna Cápac", "Rumiñahui", "Túpac Yupanqui"],
+  correct: 1
+  },
+  7: {
+  question: "¿Qué estrategia militar clave utilizó Francisco Pizarro en la captura de Atahualpa en Cajamarca?",
+  options: [
+    "Emboscada con caballería y armas de fuego",
+    "Asedio prolongado a la ciudad",
+    "Negociación diplomática con traductores"
+  ],
+  correct: 1
+  },
+  8: {
+  question: "Además del botín de oro y plata, ¿qué objetivo estratégico perseguían los españoles al conquistar el Imperio Inca?",
+  options: [
+    "Controlar las rutas de la llama",
+    "Desarticular el sistema de creencias inca",
+    "Establecer una ruta hacia el Amazonas"
+  ],
+  correct: 2 
+  }
+};
 const correctAnswerIndex = 1; 
 
 // Variables del puma
@@ -265,6 +300,44 @@ function checkWallCollision() {
     return false;
 }
 
+function showRunaQuiz(runaId) {
+  const quiz = runaQuizzes[runaId];
+  if (!quiz) return; // si no hay pregunta definida
+
+  const container = document.getElementById("runa-quiz-container");
+  const questionElem = document.getElementById("runa-quiz-question");
+  const optionsElem = document.getElementById("runa-quiz-options");
+
+  // limpiar
+  optionsElem.innerHTML = "";
+  questionElem.textContent = quiz.question;
+
+  quiz.options.forEach((opt, idx) => {
+    const li = document.createElement("li");
+    li.textContent = opt;
+    li.classList.add("runa-option");
+    li.onclick = () => {
+      container.style.display = "none";
+      if (idx === quiz.correct) {
+        wisdomPoints += 10;
+        updateWisdomBar();
+        showCenterMessage("¡Correcto! +10 Sabiduría", 2000);
+      } else {
+        showCenterMessage("Respuesta incorrecta...", 2000);
+      }
+      // avanzar a siguiente escena después de contestar
+      setTimeout(() => {
+        const nextSceneFn = window[`startScene${scene + 1}`];
+        if (typeof nextSceneFn === "function") nextSceneFn();
+      }, 2200);
+    };
+    optionsElem.appendChild(li);
+  });
+
+  container.style.display = "flex";
+}
+
+
 function checkRunaCollection() {
     if (scene >= 4) {
         const runaId = `runa${scene}`;
@@ -279,24 +352,14 @@ function checkRunaCollection() {
                 playerRect.top > runaRect.bottom
             );
             if (overlap) {
-                wisdomPoints += 10;
-                updateWisdomBar();
                 runa.style.display = 'none';
-                showCenterMessage("¡Runa obtenida! +10 sabiduría", 2000);
-
-                // Transición automática al siguiente nivel si existe
-                setTimeout(() => {
-                    showDialogue("¡Nivel completado! Preparando siguiente reto...");
-                    setTimeout(() => {
-                        hideDialogue();
-                        const nextSceneFn = window[`startScene${scene + 1}`];
-                        if (typeof nextSceneFn === "function") nextSceneFn();
-                    }, 3000);
-                }, 2000);
+                const runaNum = parseInt(scene); 
+                showRunaQuiz(runaNum);
             }
         }
     }
 }
+
 
 
 class Feather {
@@ -1416,7 +1479,7 @@ function checkQuizAnswer() {
         if (scene === 1 && !talkedToNPC) {
             wisdomPoints += 10;
             updateWisdomBar();
-            showCenterMessage("¡Acertaste! +10 puntos de sabiduría", 2500);
+            showCenterMessage("¡Correcto! +10 Sabiduría", 2500);
             document.getElementById("quiz-container").style.display = "none";
             quizActive = false;
             startScene2();
@@ -1424,7 +1487,7 @@ function checkQuizAnswer() {
         else {
             wisdomPoints += 10;
             updateWisdomBar();
-            showCenterMessage("¡Acertaste! +10 puntos de sabiduría", 2500);
+            showCenterMessage("¡Correcto! +10 Sabiduría", 2500);
             document.getElementById("quiz-container").style.display = "none";
             quizActive = false;
         }
@@ -1456,5 +1519,3 @@ document.getElementById("playButton").addEventListener("click", () => {
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
-
-
