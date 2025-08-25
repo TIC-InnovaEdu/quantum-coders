@@ -105,6 +105,17 @@ const runaQuizzes = {
   }
 };
 const correctAnswerIndex = 1; 
+const audioTracks = {
+    menu: new Audio('Resources/Music/Menu_m.mp3'),
+    scene1: new Audio('Resources/Music/first.mp3'),
+    scene2: new Audio('Resources/Music/first.mp3'),
+    scene3: new Audio('Resources/Music/scene3_eagle.mp3'),
+    scene4: new Audio('Resources/Music/jungle_m.mp3'),
+    scene5: new Audio('Resources/Music/jungle_m.mp3'),
+    scene6: new Audio('Resources/Music/beach_m.mp3'),
+    scene7: new Audio('Resources/Music/beach_m.mp3'),
+    scene8: new Audio('Resources/Music/Menu_m.mp3')
+};
 
 // Variables del puma
 let pumaDirection = 1;
@@ -122,6 +133,7 @@ let playerLives = 4;
 let playerRecentlyDamaged = false;
 let playerLastAttackTime = 0;    
 let playerAttackCooldown = 1000;  
+let currentAudio = null;
 
 // Variables del águila
 let eagleX = 1200;
@@ -242,6 +254,23 @@ function applyGravity() {
     }
 }
 
+function playSceneMusic(sceneKey) {
+    // Detener música actual si hay una reproduciéndose
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+    
+    // Reproducir nueva música si existe para esta escena
+    if (audioTracks[sceneKey]) {
+        currentAudio = audioTracks[sceneKey];
+        currentAudio.loop = true;
+        currentAudio.volume = 0.7; // Ajusta el volumen (0.0 a 1.0)
+        currentAudio.play().catch(error => {
+            console.log("Error reproduciendo música:", error);
+        });
+    }
+}
 
 function getCurrentPlatform() {
   const activePlatforms = scene === 2
@@ -1226,6 +1255,16 @@ function updateProjectiles() {
 
 function updateSpanishEnemies() {
     spanishEnemies.forEach(enemy => {
+        const enemyRect = enemy.getBoundingClientRect();
+        const enemyCenterX = enemyRect.left + enemyRect.width / 2;
+        const playerCenterX = playerX + playerWidth / 2;
+
+        if (playerCenterX > enemyCenterX) {
+            enemy.classList.add("flipped");   
+        } else {
+            enemy.classList.remove("flipped"); 
+        }
+
         let state = enemy.dataset.state;
         let timer = parseInt(enemy.dataset.timer);
 
@@ -1233,14 +1272,12 @@ function updateSpanishEnemies() {
         if (timer <= 0) {
             if (state === "recharge") {
                 state = "aim";
-                timer = 60; // 1s
+                timer = 60;
                 enemy.style.backgroundImage = "url('Resources/Mobs/conquest_aiming_lft.png')";
             } else if (state === "aim") {
                 state = "shoot";
                 timer = 60;
                 enemy.style.backgroundImage = "url('Resources/Mobs/conquest_shooting.png')";
-
-                // Disparar proyectil
                 spawnProjectile(enemy);
             } else if (state === "shoot") {
                 state = "idle";
@@ -1317,6 +1354,7 @@ function startIntroScene() {
 }
 
 function startScene2() {
+    playSceneMusic('scene2');
     hideDialogue();
     scene = 2;
     transitioning = false;
@@ -1349,6 +1387,7 @@ function startScene2() {
 }
 
 function startScene3() {
+    playSceneMusic('scene3');
     hideDialogue();
     scene = 3;
     transitioning = false;
@@ -1393,6 +1432,7 @@ function startScene3() {
 }
 
 function startScene4() {
+    playSceneMusic('scene4');
     hideDialogue();
     scene = 4;
     transitioning = false;
@@ -1420,6 +1460,7 @@ function startScene4() {
 }
 
 function startScene5() {
+    playSceneMusic('scene5');
     hideDialogue();
     scene = 5;
     transitioning = false;
@@ -1447,6 +1488,7 @@ function startScene5() {
 }
 
 function startScene6() {
+    playSceneMusic('scene6');
     hideDialogue();
     scene = 6;
     transitioning = false;
@@ -1485,6 +1527,7 @@ function startScene6() {
 }
 
 function startScene7() {
+    playSceneMusic('scene7');
     hideDialogue();
     scene = 7;
     transitioning = false;
@@ -1508,7 +1551,7 @@ function startScene7() {
     spanishEnemies = Array.from(document.querySelectorAll(`.platforms-scene-${scene} .spanish-enemy`));
     spanishEnemies.forEach(enemy => {
         enemy.dataset.state = "recharge";
-        enemy.dataset.timer = 120; // 2 segundos
+        enemy.dataset.timer = 120;
         enemy.style.backgroundImage = "url('Resources/Mobs/conquest_recharge.png')";
     });
     projectiles = [];
@@ -1518,6 +1561,7 @@ function startScene7() {
 }
 
 function startScene8() {
+    playSceneMusic('scene8');
     hideDialogue();
     scene = 8;
     transitioning = false;
@@ -1699,6 +1743,7 @@ function checkQuizAnswer() {
 
 document.getElementById("playButton").addEventListener("click", () => {
     document.getElementById("menu").style.display = "none";
+    playSceneMusic('scene1');
     document.getElementById("introScene").style.display = "flex";
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/fa_floor.png')";
     scene = 0;  
@@ -1708,6 +1753,11 @@ document.getElementById("playButton").addEventListener("click", () => {
     gameLoop();
 });
 
+window.addEventListener('load', () => {
+    playSceneMusic('menu');
+});
+
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
+
