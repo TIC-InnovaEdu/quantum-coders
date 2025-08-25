@@ -47,6 +47,9 @@ let triggerY = 100;
 let quizActive = false;
 let selectedOptionIndex = 0;
 let wisdomPoints = 0;
+let spanishEnemies = [];
+let projectiles = [];
+
 
 
 // Configuración de la pregunta
@@ -241,23 +244,23 @@ function applyGravity() {
 
 
 function getCurrentPlatform() {
-    const activePlatforms = scene === 2
+  const activePlatforms = scene === 2
     ? document.querySelectorAll('.platforms-scene-2 .platform')
     : document.querySelectorAll('.platforms-scene-1 .platform');
-    const playerRect = player.getBoundingClientRect();
-    
-    for (const platform of platforms) {
-        const platformRect = platform.getBoundingClientRect();
-        
-        if (playerRect.right > platformRect.left + 5 && 
-            playerRect.left < platformRect.right - 5 &&
-            playerRect.bottom >= platformRect.top - 10 && 
-            playerRect.bottom <= platformRect.top + 5) {
-            return platform;
-        }
+  const playerRect = player.getBoundingClientRect();
+
+  for (const platform of activePlatforms) {  // <-- antes decía "platforms"
+    const platformRect = platform.getBoundingClientRect();
+    if (playerRect.right > platformRect.left + 5 && 
+        playerRect.left < platformRect.right - 5 &&
+        playerRect.bottom >= platformRect.top - 10 && 
+        playerRect.bottom <= platformRect.top + 5) {
+      return platform;
     }
-    return null;
+  }
+  return null;
 }
+
 
 
 function checkPlatformBlockers() {
@@ -1164,6 +1167,129 @@ function checkTriggerCollision() {
     }
 }
 
+function spawnProjectile(enemy) {
+  const stageEl = document.getElementById("stage");        // usar #stage
+  if (!stageEl) return;                                     // guard
+
+  const enemyRect = enemy.getBoundingClientRect();
+  const stageRect = stageEl.getBoundingClientRect();
+
+  // Coordenadas relativas al stage
+  const projectileX = enemyRect.left - stageRect.left + enemyRect.width / 2;
+  const projectileY = enemyRect.top  - stageRect.top  + enemyRect.height / 2;
+
+  const proj = document.createElement("div");
+  proj.classList.add("projectile");
+  proj.style.position = "absolute";                         
+  proj.style.left = projectileX + "px";
+  proj.style.top  = projectileY + "px";
+  stageEl.appendChild(proj);
+
+  // Disparar hacia el jugador
+  const playerCenterX = playerX + playerWidth / 2;
+  const dir = playerCenterX < projectileX ? -6 : 6;
+
+  projectiles.push({ element: proj, x: projectileX, y: projectileY, speed: dir });
+}
+
+
+function updateProjectiles() {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        let proj = projectiles[i];
+        proj.x += proj.speed; // mover con su propia velocidad
+        proj.element.style.left = proj.x + "px";
+
+        // Colisión con jugador
+        const projRect = proj.element.getBoundingClientRect();
+        const playerRect = player.getBoundingClientRect();
+        const overlap = !(
+            projRect.right < playerRect.left ||
+            projRect.left > playerRect.right ||
+            projRect.bottom < playerRect.top ||
+            projRect.top > playerRect.bottom
+        );
+
+        if (overlap) {
+            applyDamageToPlayer();
+            proj.element.remove();
+            projectiles.splice(i, 1);
+            continue;
+        }
+
+        // Si se va fuera de pantalla
+        if (proj.x < 0 || proj.x > stageWidth) {
+            proj.element.remove();
+            projectiles.splice(i, 1);
+        }
+    }
+}
+
+function updateSpanishEnemies() {
+    spanishEnemies.forEach(enemy => {
+        let state = enemy.dataset.state;
+        let timer = parseInt(enemy.dataset.timer);
+
+        timer--;
+        if (timer <= 0) {
+            if (state === "recharge") {
+                state = "aim";
+                timer = 60; // 1s
+                enemy.style.backgroundImage = "url('Resources/Mobs/conquest_aiming_lft.png')";
+            } else if (state === "aim") {
+                state = "shoot";
+                timer = 60;
+                enemy.style.backgroundImage = "url('Resources/Mobs/conquest_shooting.png')";
+
+                // Disparar proyectil
+                spawnProjectile(enemy);
+            } else if (state === "shoot") {
+                state = "idle";
+                timer = 60;
+                enemy.style.backgroundImage = "url('Resources/Mobs/conquest_idle.png')";
+            } else if (state === "idle") {
+                state = "recharge";
+                timer = 120;
+                enemy.style.backgroundImage = "url('Resources/Mobs/conquest_recharge.png')";
+            }
+        }
+
+        enemy.dataset.state = state;
+        enemy.dataset.timer = timer;
+    });
+}
+
+function checkSpanishCollision() {
+    spanishEnemies.forEach(enemy => {
+        const enemyRect = enemy.getBoundingClientRect();
+        const playerRect = player.getBoundingClientRect();
+
+        const overlap = !(
+            playerRect.right < enemyRect.left ||
+            playerRect.left > enemyRect.right ||
+            playerRect.bottom < enemyRect.top ||
+            playerRect.top > enemyRect.bottom
+        );
+
+        if (overlap) {
+            // Colisión lateral (bloquea como pared)
+            if (playerRect.right > enemyRect.left && playerRect.left < enemyRect.left) {
+                playerX = enemy.offsetLeft - player.offsetWidth; // bloquear a la izquierda
+            }
+            if (playerRect.left < enemyRect.right && playerRect.right > enemyRect.right) {
+                playerX = enemy.offsetLeft + enemy.offsetWidth; // bloquear a la derecha
+            }
+
+            // Colisión superior (puede pararse encima como plataforma)
+            if (playerRect.bottom > enemyRect.top && velocityY <= 0) {
+                playerY = enemy.offsetTop + enemy.offsetHeight;
+                velocityY = 0; 
+                isJumping = false;
+            }
+
+            updateCharacterPosition(player, playerX, playerY);
+        }
+    });
+}
 
 
 function startIntroScene() {
@@ -1344,6 +1470,15 @@ function startScene6() {
     playerY = groundLevel + 5;
     updateCharacterPosition(player, playerX, playerY);
 
+    // Inicializar enemigos españoles de la escena actual
+    spanishEnemies = Array.from(document.querySelectorAll(`.platforms-scene-${scene} .spanish-enemy`));
+    spanishEnemies.forEach(enemy => {
+        enemy.dataset.state = "recharge";
+        enemy.dataset.timer = 120; // 2 segundos
+        enemy.style.backgroundImage = "url('Resources/Mobs/conquest_recharge.png')";
+    });
+    projectiles = [];
+
     // Mostrar runa correspondiente
     showRunaForScene();
     document.getElementById("ayllu-warning").style.display = "none";
@@ -1368,6 +1503,15 @@ function startScene7() {
     playerX = 120;
     playerY = groundLevel + 5;
     updateCharacterPosition(player, playerX, playerY);
+
+    // Inicializar enemigos españoles de la escena actual
+    spanishEnemies = Array.from(document.querySelectorAll(`.platforms-scene-${scene} .spanish-enemy`));
+    spanishEnemies.forEach(enemy => {
+        enemy.dataset.state = "recharge";
+        enemy.dataset.timer = 120; // 2 segundos
+        enemy.style.backgroundImage = "url('Resources/Mobs/conquest_recharge.png')";
+    });
+    projectiles = [];
 
     showRunaForScene();
     document.getElementById("ayllu-warning").style.display = "none";
@@ -1402,6 +1546,7 @@ function startScene8() {
 function gameLoop() {
     movePlayer();
     checkNPCInteraction();
+
     if (scene === 1) {
         checkTriggerCollision();
     } else if (scene === 2) {
@@ -1418,13 +1563,20 @@ function gameLoop() {
         } else {
             appleSpawnTimer--;
         }
-    } else if (scene >= 4) { // Aplica a nivel 4 y superiores
+    } else if (scene >= 4) {  
         checkQuicksandCollision();
         checkRunaCollection();
+        if (scene === 6 || scene === 7) {
+            updateSpanishEnemies(); 
+            updateProjectiles();    
+            checkSpanishCollision();  
+        }
     }
+
     updatePositions();
     requestAnimationFrame(gameLoop);
 }
+
 
 
 
@@ -1559,4 +1711,3 @@ document.getElementById("playButton").addEventListener("click", () => {
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
-
