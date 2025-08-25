@@ -712,4 +712,23 @@ body, html {
   font-weight: bold;
 }
 
+.spanish-enemy {
+  position: absolute;
+  width: 80px;
+  height: 120px;
+  background-image: url('Resources/Mobs/conquest_idle.png');
+  background-size: cover;
+  z-index: 5;
+}
+
+.projectile {
+  position: absolute;
+  width: 30px;
+  height: 10px;
+  background-image: url('Resources/Mobs/Bullet.png');
+  background-size: cover;
+  z-index: 4;
+}
+
+
 
