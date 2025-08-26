@@ -48,10 +48,10 @@ let selectedOptionIndex = 0;
 let wisdomPoints = 0;
 let spanishEnemies = [];
 let projectiles = [];
-
-
-
-// Configuraciónes de las preguntas
+// --- Seguimiento de puntuación / métricas para envío ---
+let runasCollected = 0;
+let enemiesDefeated = 0;   // suma puma + jefes
+// (wisdomPoints ya existe; lo usamos como 'score')
 const quizQuestionText = "¿En qué año comenzó la invasión española al Tahuantinsuyo?";
 const quizOptions = [
     "1492",
@@ -428,7 +428,10 @@ function checkRunaCollection() {
             );
             if (overlap) {
                 runa.style.display = 'none';
-                const runaNum = parseInt(scene); 
+                // sumar runa recogida
+                runasCollected += 1;
+                // opcional: sumar puntos también si quieres
+                // addScore(50);   // si implementas currentScore separado
                 showRunaQuiz(runaNum);
             }
         }
@@ -632,15 +635,35 @@ function showGameOver() {
     const gameOverScreen = document.getElementById('gameOverScreen');
     const overlay = document.getElementById('overlay');
 
-    // Mostrar el mensaje de Game Over
+    // Mostrar mensaje de Game Over
     gameOverScreen.style.display = 'block';
     gameOverScreen.innerHTML = "¡Game Over! Has perdido todas tus vidas.";
 
-    // Oscurecer toda la pantalla
+    // Oscurecer pantalla
     overlay.style.background = "rgba(0, 0, 0, 0.85)";
-    setTimeout(() => {
-        location.reload();
-    }, 3000);
+
+    // --- Preparar datos que se guardarán en Firestore ---
+    // wisdomPoints existe en tu código; lo usamos como 'score'
+    window.finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
+
+    // Metadata adicional opcional
+    window.finalGameData = {
+      score: window.finalScore,
+      wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
+      levelReached: (typeof scene !== 'undefined') ? scene : null,
+      runasCollected: typeof runasCollected !== 'undefined' ? runasCollected : 0,
+      enemiesDefeated: typeof enemiesDefeated !== 'undefined' ? enemiesDefeated : 0,
+      timestamp: new Date().toISOString()
+    };
+
+    // Abrir modal de guardado (index.html expone window.promptSaveScore)
+    if (typeof window.promptSaveScore === 'function') {
+      setTimeout(() => {
+        // pasar score por compatibilidad
+        window.promptSaveScore(window.finalScore);
+      }, 150);
+    }
+    // Nota: no recargamos inmediatamente para dar tiempo a que el jugador guarde.
 }
 
 function isOnPlatform() {
@@ -1015,6 +1038,8 @@ function checkEagleHit() {
 
         if (eagleLives <= 0) {
             eagle.style.display = "none";
+            // dentro del bloque donde confirmas derrota del águila:
+            enemiesDefeated += 1;
             showDialogue("¡Has derrotado al Águila!");
         }
     }
@@ -1148,6 +1173,8 @@ function checkPlayerAttackHitsEnemy() {
         if (pumaLives <= 0) {
             pumaDefeated = true;
             puma.style.display = 'none';
+            // dentro del bloque de derrota del puma:
+            enemiesDefeated += 1;
 
             showDialogue("¡Has vencido al enemigo!");
 
@@ -1779,5 +1806,4 @@ window.addEventListener('load', () => {
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
-
 

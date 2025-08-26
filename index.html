@@ -5,201 +5,185 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Runa Pachawan - Grupo 10</title>
     <link rel="stylesheet" href="estilos.css" />
-</head>
-<body>
-    <div id="menu" class="fullscreen">
-        <h1 id="gameTitle">RUNA PACHAWAN</h1>
-        <div class="menu-options">
-            <button id="playButton">Jugar</button>
-            <button id="exitButton">Salir</button>
-        </div>
-        <div class="controls">
-            <h3>Controles:</h3>
-            <p>🡆 🡄 🡅 🡇 - Moverse</p>
-            <p>A - Atacar</p>
-            <p>B - Interactuar</p>
-        </div>
-    </div>
-    <div id="game-container">
-        <div class="background" id="background"></div>
-        <div id="stage">
-            <div id="floor"></div>
-            <!-- Nivel 1 -->
-            <div class="platforms-scene-1">
-            </div>
+    <!-- Firebase (compat) SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script>
+      // --- Tu firebaseConfig (tal como me lo pasaste) ---
+      const firebaseConfig = {
+        apiKey: "AIzaSyDAEwufyWjRtxvWpG3XiVD1TekeABK6Yjs",
+        authDomain: "quantum-coders-3d4ca.firebaseapp.com",
+        projectId: "quantum-coders-3d4ca",
+        storageBucket: "quantum-coders-3d4ca.firebasestorage.app",
+        messagingSenderId: "870775316580",
+        appId: "1:870775316580:web:f62da8a3e62615eccc3f71",
+        measurementId: "G-551EQ283PK"
+      };
 
-            <!-- Plataformas visibles solo en escena 2 -->
-            <div class="platforms-scene-2" style="display: none;">
-                <!-- Plataforma 1 -->
-                <div class="platform" style="left: 350px; bottom: 180px; width: 120px; height: 20px;"></div>
-                <div class="blocker-wall" style="left: 350px; bottom: 100px; width: 120px; height: 80px;"></div>
+      // Inicializa Firebase (compat)
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
 
-                <!-- Plataforma 2 -->
-                <div class="platform" style="left: 700px; bottom: 250px; width: 120px; height: 20px;"></div>
-    
-                <!-- Plataforma 3 -->
-                <div class="platform" style="left: 900px; bottom: 390px; width: 120px; height: 20px;"></div>
-            </div>
-            
-            <!--Scenario 3-->
-            <div class="platforms-scene-3" style="display: none;">
-                <!-- Plataforma izquierda -->
-                <div class="platform" style="left: 200px; bottom: 200px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 200px; bottom: 320px; width: 120px; height: 20px;"></div>
-                <!-- Plataforma derecha -->
-                <div class="platform" style="left: 1200px; bottom: 200px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 1200px; bottom: 320px; width: 120px; height: 20px;"></div>
-            </div>
+      // Función que guarda en Firestore
+      async function guardarScoreFirestore(nombre, user, score) {
+        try {
+          // Si existe window.finalGameData (la llenamos en func.js), úsala
+          const meta = (typeof window.finalGameData !== 'undefined') ? window.finalGameData : {
+            score: Number(score) || 0,
+            wisdomPoints: Number(score) || 0,
+            levelReached: null,
+            runasCollected: 0,
+            enemiesDefeated: 0,
+            timestamp: new Date().toISOString()
+          };
 
-            <!-- Nivel 4 -->
-            <div class="platforms-scene-4" style="display: none;">
-                <!-- Plataforma inicial -->
-                <div class="platform green" style="left: 100px; bottom: 160px; width: 180px; height: 20px;"></div>
-                 <!-- Plataforma pequeña -->
-                <div class="platform green" style="left: 400px; bottom: 300px; width: 80px; height: 20px;"></div>
-                <!-- Plataforma mediana -->
-                <div class="platform green" style="left: 650px; bottom: 220px; width: 120px; height: 20px;"></div>
-                <div class="platform green" style="left: 950px; bottom: 150px; width: 80px; height: 20px;"></div>
-                <!-- Plataforma -->
-                <div class="platform green" style="left: 1300px; bottom: 150px; width: 180px; height: 20px;"></div>
-                <div class="quicksand" id="quicksand4"></div>
-                <!-- Runa 4 -->
-                <div class="collectible" id="runa4"></div>
-                <!-- Mensaje de Ayllu -->
-                <div id="ayllu-warning">
-                <div id="ayllu4-float"></div>
-                <div id="ayllu4-text">Cuidado con las arenas movedizas, si te caes lo lamentarás...</div>
-                </div>
-            </div>
-            
-            
-            <!-- Nivel 5 -->
-            <div class="platforms-scene-5" style="display: none;">
-                <!-- Plataforma inicial -->
-                <div class="platform green" style="left: 80px; bottom: 180px; width: 160px; height: 20px;"></div>
-                <!-- Plataforma mediana -->
-                <div class="platform green" style="left: 350px; bottom: 320px; width: 120px; height: 20px;"></div>
-                <!-- Plataforma pequeña -->
-                <div class="platform green" style="left: 600px; bottom: 220px; width: 70px; height: 20px;"></div>
-                <div class="platform green" style="left: 900px; bottom: 180px; width: 20px; height: 20px;"></div>
-                <div class="platform green" style="left: 1200px; bottom: 180px; width: 160px; height: 20px;"></div>
-                <div class="quicksand" id="quicksand5"></div>
-                <!-- Runa coleccionable -->
-                <div class="collectible" id="runa5"></div>
-            </div>
-            
-            <!-- Nivel 6 -->
-            <div class="platforms-scene-6" style="display: none;">
-                <!-- Plataformas en zigzag -->
-                <div class="platform" style="left: 100px; bottom: 150px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 300px; bottom: 290px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 500px; bottom: 150px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 700px; bottom: 290px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 900px; bottom: 150px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 1100px; bottom: 290px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 1300px; bottom: 150px; width: 120px; height: 20px;"></div>
-                <div class="platform" style="left: 1500px; bottom: 220px; width: 120px; height: 20px;"></div>
+          // Sobre-escribe nombre/user con lo que pase el modal
+          meta.nombre = nombre || meta.nombre || null;
+          meta.user = user || meta.user || 'anon';
 
-                <div class="spanish-enemy" style="left: 670px; bottom: 100px;"></div>
-                <div class="spanish-enemy" style="left: 1122px; bottom: 310px;"></div>
-                
-                <!-- Runa coleccionable -->
-                <div class="collectible" id="runa6"></div>
-            </div>
-            
-            
-            <!-- Nivel 7 -->
-            <div class="platforms-scene-7" style="display: none;">
-                <!-- Plataformas verticales -->
-                <div class="platform" style="left: 200px; bottom: 100px; width: 80px; height: 20px;"></div>
-                <div class="platform" style="left: 300px; bottom: 200px; width: 80px; height: 20px;"></div>
-                <div class="platform" style="left: 400px; bottom: 300px; width: 80px; height: 20px;"></div>
-                <div class="platform" style="left: 500px; bottom: 400px; width: 80px; height: 20px;"></div>
+          // Asegurarnos types
+          meta.score = Number(meta.score) || 0;
+          meta.wisdomPoints = Number(meta.wisdomPoints) || meta.score || 0;
+          meta.createdAt = firebase.firestore.FieldValue.serverTimestamp();
 
-                <div class="platform" style="left: 1150px; bottom: 100px; width: 80px; height: 20px;"></div>
-                <div class="platform" style="left: 1150px; bottom: 200px; width: 80px; height: 20px;"></div>
-                <div class="platform" style="left: 1150px; bottom: 300px; width: 80px; height: 20px;"></div>
-                <div class="platform" style="left: 1150px; bottom: 400px; width: 80px; height: 20px;"></div>
-                
-                <div class="platform" style="left: 900px; bottom: 200px; width: 80px; height: 20px;"></div>
-                <div class="platform" style="left: 800px; bottom: 300px; width: 80px; height: 20px;"></div>
-                
-                <div class="spanish-enemy" style="left: 1150px; bottom: 120px;"></div>
-                <div class="spanish-enemy" style="left: 1150px; bottom: 220px;"></div>
-                <div class="spanish-enemy" style="left: 1150px; bottom: 320px;"></div>
+          const docRef = await db.collection('scores').add(meta);
+          return { ok: true, id: docRef.id };
+        } catch (err) {
+          return { ok: false, error: err };
+        }
+      }
 
-                <div class="collectible" id="runa7"></div>
-            </div>
-            
-            <!-- Nivel 8 -->
-             
-            <div class="platforms-scene-8" style="display: none;">
-                
-                <div class="platform moving" style="left: 600px; bottom: 150px; width: 100px; height: 20px;"></div>
-                <div class="platform moving" style="left: 800px; bottom: 250px; width: 100px; height: 20px;"></div>
-                <div class="platform moving" style="left: 1000px; bottom: 350px; width: 100px; height: 20px;"></div>
-                <div class="platform" style="left: 1200px; bottom: 450px; width: 180px; height: 20px;"></div>
-    
-                <div class="collectible" id="runa8"></div>
-            </div>
-            
-            <div id="eagleBoss" style="display: none;">
-                <div class="boss" id="eagle"></div>
-            <img id="feather-sprite" src="Resources/First_Boss/eagle_atk_mag.png" style="display:none">
-            </div>
-            <div class="collectible" id="runa1" style="left: 700px; bottom: 180px;"></div>
-            <div class="character" id="player"></div>
-            <!--Integración de Ayllu-->
-            <div class="companion" id="ayllu">
-                <div class="npc-label">Presiona 'B'</div>
-            </div>
-            <div class="scene-trigger" id="trigger1"></div>
-            <div class="enemy" id="puma" style="display: none;"></div>
-            <div id="life-bar">
-                <img id="lifeImage" src="Resources/vida4.png" />
-            </div>
-            <!-- Contador de sabiduría -->
-            <div id="wisdom-bar">
-                <span id="wisdom-label">Sabiduría:</span>
-                <span id="wisdom-points">0</span>
-            </div>
-            <div id="eagle-life-bar" style="display: none;">
-                <img id="eagleLifeImage" src="Resources/vida_full_eagle.png" />
-            </div>
-            <div id="gameOverScreen" style="display: none;">
-                 <h1>Game Over</h1>
-                 <p>Has perdido todas tus vidas.</p>
-            </div>
-            <!-- Mensaje central para aciertos/errores -->
-            <div id="centerMessage" style="display: none;">
-                <p id="centerMessageText"></p>
-            </div>
-            <div class="blocker" style="left: 1250px; bottom: 100px;"></div>
-            <!-- Cuadro de pregunta tipo quiz -->
-            <div id="quiz-container" style="display: none;">
-                <div id="quiz-box">
-                     <p id="quiz-question">Pregunta aquí...</p>
-                    <ul id="quiz-options">
-                        <li class="quiz-option selected">Opción 1</li>
-                        <li class="quiz-option">Opción 2</li>
-                        <li class="quiz-option">Opción 3</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Quiz de Runas -->
-    <div id="runa-quiz-container" style="display: none;">
-        <div id="runa-quiz-box">
-            <p id="runa-quiz-question"></p>
-            <ul id="runa-quiz-options"></ul>
-        </div>
-    </div>
-    <div id="overlay"></div>
-    <div id="introScene">
-        <div id="introText"></div>
-        <div id="continuePrompt" style="display: none;">Presiona 'B' para continuar</div>
-    </div>
+      /* ---------- Interfaz modal ---------- */
+      const modal = document.getElementById('saveScoreModal');
+      const modalScoreEl = document.getElementById('modalScore');
+      const modalNombre = document.getElementById('modalNombre');
+      const modalUser = document.getElementById('modalUser');
+      const modalSave = document.getElementById('modalSave');
+      const modalCancel = document.getElementById('modalCancel');
+      const saveScoreMessage = document.getElementById('saveScoreMessage');
+
+      let currentFinalScore = 0;
+
+      function openSaveModal(score=0){
+        currentFinalScore = score || 0;
+        modalScoreEl.textContent = currentFinalScore;
+        modalNombre.value = '';
+        modalUser.value = '';
+        saveScoreMessage.textContent = '';
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden','false');
+        modalUser.focus();
+      }
+
+      function closeSaveModal(){
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden','true');
+      }
+
+      modalCancel.addEventListener('click', () => {
+        closeSaveModal();
+      });
+
+      modalSave.addEventListener('click', async () => {
+        const nombre = modalNombre.value.trim();
+        const user = modalUser.value.trim();
+        if(!user){
+          saveScoreMessage.textContent = 'El campo "User / Apellido" es obligatorio.';
+          return;
+        }
+        saveScoreMessage.textContent = 'Guardando...';
+        const res = await guardarScoreFirestore(nombre, user, currentFinalScore);
+        if(res.ok){
+          saveScoreMessage.textContent = 'Puntuación guardada ✅';
+          setTimeout(() => {
+            closeSaveModal();
+          }, 900);
+        } else {
+          saveScoreMessage.textContent = 'Error al guardar: ' + (res.error && res.error.message ? res.error.message : res.error);
+        }
+      });
+
+      /* ---------- Función pública para llamar desde func.js ---------- */
+      // Llamar: window.promptSaveScore(finalScore)
+      window.promptSaveScore = function(finalScore){
+        openSaveModal(finalScore);
+      };
+
+      /* ---------- Detectar Game Over automáticamente (opcional) ---------- */
+      // Observa cambios del #gameOverScreen y muestra modal
+      const gameOverEl = document.getElementById('gameOverScreen');
+      if(gameOverEl){
+        const observer = new MutationObserver((mutations) => {
+          for(const m of mutations){
+            if(m.type === 'attributes' && m.attributeName === 'style'){
+              const disp = window.getComputedStyle(gameOverEl).display;
+              if(disp !== 'none'){
+                // Si func.js define window.finalScore lo usará; si no, manda 0
+                const s = (typeof window.finalScore !== 'undefined') ? window.finalScore : 0;
+                openSaveModal(s);
+              }
+            }
+          }
+        });
+        observer.observe(gameOverEl, { attributes: true, attributeFilter: ['style'] });
+      }
+    </script>
+
+    <!-- TU CÓDIGO DEL JUEGO -->
+    <!-- Asegúrate de que func.js pueda llamar a window.promptSaveScore(scoreFinal) cuando termine -->
+    <script src="func.js"></script>
+</body>
+</html>
+        closeSaveModal();
+      });
+
+      modalSave.addEventListener('click', async () => {
+        const nombre = modalNombre.value.trim();
+        const user = modalUser.value.trim();
+        if(!user){
+          saveScoreMessage.textContent = 'El campo "User / Apellido" es obligatorio.';
+          return;
+        }
+        saveScoreMessage.textContent = 'Guardando...';
+        const res = await guardarScoreFirestore(nombre, user, currentFinalScore);
+        if(res.ok){
+          saveScoreMessage.textContent = 'Puntuación guardada ✅';
+          setTimeout(() => {
+            closeSaveModal();
+          }, 900);
+        } else {
+          saveScoreMessage.textContent = 'Error al guardar: ' + (res.error && res.error.message ? res.error.message : res.error);
+        }
+      });
+
+      /* ---------- Función pública para llamar desde func.js ---------- */
+      // Llamar: window.promptSaveScore(finalScore)
+      window.promptSaveScore = function(finalScore){
+        openSaveModal(finalScore);
+      };
+
+      /* ---------- Detectar Game Over automáticamente (opcional) ---------- */
+      // Observa cambios del #gameOverScreen y muestra modal
+      const gameOverEl = document.getElementById('gameOverScreen');
+      if(gameOverEl){
+        const observer = new MutationObserver((mutations) => {
+          for(const m of mutations){
+            if(m.type === 'attributes' && m.attributeName === 'style'){
+              const disp = window.getComputedStyle(gameOverEl).display;
+              if(disp !== 'none'){
+                // Si func.js define window.finalScore lo usará; si no, manda 0
+                const s = (typeof window.finalScore !== 'undefined') ? window.finalScore : 0;
+                openSaveModal(s);
+              }
+            }
+          }
+        });
+        observer.observe(gameOverEl, { attributes: true, attributeFilter: ['style'] });
+      }
+    </script>
+
+    <!-- TU CÓDIGO DEL JUEGO -->
+    <!-- Asegúrate de que func.js pueda llamar a window.promptSaveScore(scoreFinal) cuando termine -->
     <script src="func.js"></script>
 </body>
 </html>
