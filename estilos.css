@@ -726,3 +726,84 @@ body, html {
   background-size: cover;
   z-index: 4;
 }
+
+/* ---------- Modal / formulario de guardado de score (migrado desde HTML) ---------- */
+#saveScoreModal {
+  position: fixed;
+  inset: 0;                         /* top:0; right:0; bottom:0; left:0; */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+#saveScoreBox {
+  background: #fff;
+  padding: 18px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  text-align: left;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+#saveScoreBox h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+#saveScoreBox input {
+  width: 100%;
+  padding: 8px;
+  margin: 6px 0;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+#saveScoreBox .row {
+  display:flex;
+  gap:8px;
+}
+
+#saveScoreBox button {
+  padding: 8px 12px;
+  margin-top:8px;
+  cursor:pointer;
+  border-radius: 6px;
+  border: none;
+  background: #2b7cff;
+  color: #fff;
+  font-weight: 600;
+}
+
+#modalCancel {
+  background: #ccc;
+  color: #111;
+}
+
+/* Mensaje de estado */
+#saveScoreMessage {
+  font-size: 14px;
+  margin-top: 6px;
+  color: #222;
+}
+
+/* Asegurar visibilidad en dispositivos móviles */
+@media (max-width: 500px) {
+  #saveScoreBox { max-width: 94vw; padding: 14px; }
+  #saveScoreBox h3 { font-size: 16px; }
+  #saveScoreBox input { font-size: 13px; }
+  #saveScoreBox button { font-size: 14px; padding: 10px; }
+}
+
+/* Si usas overlay u otros modales, mantener z-index mayor */
+#saveScoreModal[aria-hidden="false"] {
+  display: flex;
+}
+
