@@ -643,10 +643,8 @@ function showGameOver() {
     overlay.style.background = "rgba(0, 0, 0, 0.85)";
 
     // --- Preparar datos que se guardarán en Firestore ---
-    // wisdomPoints existe en tu código; lo usamos como 'score'
     window.finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
 
-    // Metadata adicional opcional
     window.finalGameData = {
       score: window.finalScore,
       wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
@@ -656,10 +654,9 @@ function showGameOver() {
       timestamp: new Date().toISOString()
     };
 
-    // Abrir modal de guardado (index.html expone window.promptSaveScore)
-    if (typeof window.promptSaveScore === 'function') {
+    // Solo mostrar el formulario si realmente es Game Over
+    if (playerLives <= 0 && typeof window.promptSaveScore === 'function') {
       setTimeout(() => {
-        // pasar score por compatibilidad
         window.promptSaveScore(window.finalScore);
       }, 150);
     }
@@ -1208,7 +1205,8 @@ function checkQuicksandCollision() {
         playerRect.top > quicksandRect.bottom
     );
 
-    if (overlap) {
+    // Solo aplicar daño si el jugador tiene vidas
+    if (overlap && playerLives > 0) {
         playerLives = 0; 
         updateLifeBar();
     }
@@ -1806,4 +1804,4 @@ window.addEventListener('load', () => {
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
-
+window.close();

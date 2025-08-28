@@ -38,6 +38,9 @@
         modal.setAttribute('aria-hidden', 'false');
         message.textContent = "";
 
+        // Eliminar cualquier handler anterior
+        document.getElementById('saveScoreForm').onsubmit = null;
+
         // Guardar en Firestore al enviar
         document.getElementById('saveScoreForm').onsubmit = async function(e) {
           e.preventDefault();
