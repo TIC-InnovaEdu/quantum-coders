@@ -10,10 +10,11 @@ let attacksInCurrentPhase = 0;
 let eagleDiveHasHit = false;
 let hasShield = false;
 let eagleDefeated = false;
+let gameOverActive = false; // Bloqueo de juego tras Game Over
 
 
 // Constantes del juego
-const gravity = 0.5;
+const gravity = 0.45;
 const groundLevel = 100;
 const stageWidth = 2000; 
 const playerWidth = 100;
@@ -186,8 +187,14 @@ document.addEventListener('keydown', (e) => {
 });
 
 function showRunaForScene() {
-    const runa = document.getElementById(`runa${scene}`);
-    if (runa) runa.style.display = 'block';
+    // Oculta todas las runas
+    for (let i = 4; i <= 8; i++) {
+        const runa = document.getElementById(`runa${i}`);
+        if (runa) runa.style.display = 'none';
+    }
+    // Muestra solo la runa del nivel actual
+    const runaActual = document.getElementById(`runa${scene}`);
+    if (runaActual) runaActual.style.display = 'block';
 }
 
 
@@ -428,11 +435,9 @@ function checkRunaCollection() {
             );
             if (overlap) {
                 runa.style.display = 'none';
-                // sumar runa recogida
                 runasCollected += 1;
-                // opcional: sumar puntos también si quieres
-                // addScore(50);   // si implementas currentScore separado
-                showRunaQuiz(runaNum);
+                // CORREGIDO: usar scene como runaId
+                showRunaQuiz(scene);
             }
         }
     }
@@ -634,6 +639,7 @@ function applyDamageToPlayer() {
 function showGameOver() {
     const gameOverScreen = document.getElementById('gameOverScreen');
     const overlay = document.getElementById('overlay');
+    gameOverActive = true; // Bloquear el juego
 
     // Mostrar mensaje de Game Over
     gameOverScreen.style.display = 'block';
@@ -737,25 +743,33 @@ function movePuma() {
     const pumaRect = puma.getBoundingClientRect();
     const walls = document.querySelectorAll('.blocker-wall, .blocker');
     const pumaWidth = 180;
-    
+
+    // --- Nuevo comportamiento: seguir al jugador ---
+    const dx = playerX - pumaX;
+    if (Math.abs(dx) > 10) {
+        pumaDirection = dx > 0 ? 1 : -1;
+        pumaX += pumaSpeed * pumaDirection;
+        // Animación de dirección
+        if (pumaDirection > 0) {
+            puma.classList.remove('puma-facing-left');
+            puma.classList.add('puma-facing-right');
+        } else {
+            puma.classList.remove('puma-facing-right');
+            puma.classList.add('puma-facing-left');
+        }
+    }
+
+    // Limitar dentro del escenario
     if (pumaX <= 0) {
         pumaX = 0;
-        pumaDirection = 1;
-        puma.classList.remove('puma-facing-left');
-        puma.classList.add('puma-facing-right');
-        return;
     } else if (pumaX >= stageWidth - pumaWidth) {
         pumaX = stageWidth - pumaWidth;
-        pumaDirection = -1;
-        puma.classList.remove('puma-facing-right');
-        puma.classList.add('puma-facing-left');
-        return;
     }
-    
+
+    // Colisión con paredes
     let willCollide = false;
     for (const wall of walls) {
         const wallRect = wall.getBoundingClientRect();
-        
         const nextX = pumaX + (pumaSpeed * pumaDirection);
         const nextRect = {
             left: nextX,
@@ -763,7 +777,6 @@ function movePuma() {
             top: wallRect.top,
             bottom: pumaRect.bottom
         };
-        
         if (nextRect.right > wallRect.left + 5 && 
             nextRect.left < wallRect.right - 5 &&
             nextRect.bottom > wallRect.top + 5) {
@@ -771,7 +784,6 @@ function movePuma() {
             break;
         }
     }
-    
     if (willCollide) {
         pumaDirection *= -1;
         if (pumaDirection > 0) {
@@ -783,22 +795,21 @@ function movePuma() {
         }
         return;
     }
-    
+
+    // Ataque si está cerca
     const playerRect = player.getBoundingClientRect();
     if (Math.abs(playerRect.left - pumaRect.left) < 150 && 
         Math.abs(playerRect.bottom - pumaRect.bottom) < 50) {
         isPumaAttacking = true;
         puma.style.backgroundImage = "url('Resources/Mobs/panther_atk.png')";
-        
         setTimeout(() => {
             isPumaAttacking = false;
             puma.style.backgroundImage = "url('Resources/Mobs/panther_idle.png')";
         }, 500);
         return;
     }
-    
+
     if (!isPumaAttacking) {
-        pumaX += pumaSpeed * pumaDirection;
         updateCharacterPosition(puma, pumaX, pumaY);
     }
 }
@@ -1231,13 +1242,13 @@ function spawnProjectile(enemy) {
 
   // Coordenadas relativas al stage
   const projectileX = enemyRect.left - stageRect.left + enemyRect.width / 2;
-  const projectileY = enemyRect.top  - stageRect.top  + enemyRect.height / 2;
+  const projectileY = enemyRect.bottom - stageRect.top; // <-- usar bottom en vez de top
 
   const proj = document.createElement("div");
   proj.classList.add("projectile");
   proj.style.position = "absolute";                         
   proj.style.left = projectileX + "px";
-  proj.style.top  = projectileY + "px";
+  proj.style.bottom  = projectileY + "px"; // <-- bottom, no top
   stageEl.appendChild(proj);
 
   // Disparar hacia el jugador
@@ -1344,7 +1355,8 @@ function checkSpanishCollision() {
 
             // Colisión superior 
             if (playerRect.bottom > enemyRect.top && velocityY <= 0) {
-                playerY = enemy.offsetTop + enemy.offsetHeight;
+                // Ajuste: solo poner al jugador justo encima del enemigo, no mandarlo al cielo
+                playerY = parseInt(enemy.style.bottom) + enemy.offsetHeight;
                 velocityY = 0; 
                 isJumping = false;
             }
@@ -1529,8 +1541,9 @@ function startScene6() {
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/sand_floor.png')";
 
-    playerX = 120;
-    playerY = groundLevel + 5;
+    // AJUSTE: Coloca al jugador lejos de la quicksand
+    playerX = 120; // Asegúrate que esté fuera de la quicksand
+    playerY = groundLevel + 130; // Más alto que la quicksand
     updateCharacterPosition(player, playerX, playerY);
 
     spanishEnemies = Array.from(document.querySelectorAll(`.platforms-scene-${scene} .spanish-enemy`));
@@ -1607,6 +1620,7 @@ function startScene8() {
 
 
 function gameLoop() {
+    if (gameOverActive) return; // Detener el loop si es Game Over
     movePlayer();
     checkNPCInteraction();
 
@@ -1688,7 +1702,22 @@ function showFinalThanksAndReturnToMenu() {
             updateWisdomBar();
             
             playSceneMusic('menu');
-            
+
+            // --- Mostrar encuesta de puntuación al ganar ---
+            window.finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
+            window.finalGameData = {
+              score: window.finalScore,
+              wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
+              levelReached: (typeof scene !== 'undefined') ? scene : null,
+              runasCollected: typeof runasCollected !== 'undefined' ? runasCollected : 0,
+              enemiesDefeated: typeof enemiesDefeated !== 'undefined' ? enemiesDefeated : 0,
+              timestamp: new Date().toISOString()
+            };
+            if (typeof window.promptSaveScore === 'function') {
+                setTimeout(() => {
+                    window.promptSaveScore(window.finalScore);
+                }, 300);
+            }
         }, 2000); 
     });
 }
@@ -1799,9 +1828,25 @@ document.getElementById("playButton").addEventListener("click", () => {
 
 window.addEventListener('load', () => {
     playSceneMusic('menu');
+    // Advertencia para ejecución local
+    if (location.protocol === 'file:') {
+        console.warn("Estás ejecutando el juego en modo local (file://). Algunos recursos o scripts pueden no funcionar correctamente. Usa Live Server o sube a GitHub Pages para la experiencia completa.");
+    }
 });
 
 document.getElementById("exitButton").addEventListener("click", () => {
   window.close();
 });
-window.close();
+
+// Bloquear controles si es Game Over
+document.addEventListener('keydown', (e) => {
+    if (gameOverActive) return;
+    // ...existing code...
+});
+
+// Modifica el handler de "Cancelar" del modal desde el HTML/Firebase script
+// Pero también puedes agregar este handler aquí para asegurar el bloqueo:
+document.getElementById('modalCancel').addEventListener('click', function() {
+    // Al cancelar, recarga la página para volver al menú y bloquear el juego
+    location.reload();
+});

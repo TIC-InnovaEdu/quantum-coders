@@ -5,11 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Runa Pachawan - Grupo 10</title>
     <link rel="stylesheet" href="estilos.css" />
+    
+    <!-- ADVERTENCIA PARA DESARROLLO LOCAL -->
+    <!--
+      Si ejecutas desde Live Server/local, los imports de Firebase pueden fallar por CORS.
+      Para probar solo el juego, comenta el bloque <script type="module"> de Firebase.
+      Cuando subas a GitHub Pages, funcionará correctamente.
+    -->
+
     <script type="module">
       // Import the functions you need from the SDKs you need
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-      import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        getDocs
+      } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
 
       // Your web app's Firebase configuration
       const firebaseConfig = {
@@ -24,8 +36,39 @@
 
       // Initialize Firebase
       const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
       const db = getFirestore(app);
+
+      window.firebaseApp = app;
+      window.firebaseDB = db;
+
+      // Funciones de prueba (opcionales)
+      window.testWrite = async function () {
+        try {
+          const ref = await addDoc(collection(db, "testCollection"), {
+            createdAt: new Date().toISOString(),
+            origin: location.href,
+            note: "Prueba a producción"
+          });
+          console.log("Documento creado en producción con ID:", ref.id);
+          return ref.id;
+        } catch (err) {
+          console.error("Error escribiendo a Firestore (producción):", err);
+          throw err;
+        }
+      };
+
+      window.testRead = async function () {
+        try {
+          const snap = await getDocs(collection(db, "testCollection"));
+          const arr = [];
+          snap.forEach(d => arr.push({ id: d.id, data: d.data() }));
+          console.log("Docs en testCollection (producción):", arr);
+          return arr;
+        } catch (err) {
+          console.error("Error leyendo de Firestore (producción):", err);
+          throw err;
+        }
+      };
 
       // Exponer función global para mostrar el modal y guardar score
       window.promptSaveScore = async function(score) {

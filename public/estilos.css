@@ -725,6 +725,9 @@ body, html {
   background-image: url('Resources/Mobs/Bullet.png');
   background-size: cover;
   z-index: 4;
+  /* Ajuste para visibilidad y bottom */
+  bottom: 0; /* por defecto, será sobrescrito por JS */
+  left: 0;
 }
 
 /* ---------- Modal / formulario de guardado de score (migrado desde HTML) ---------- */
