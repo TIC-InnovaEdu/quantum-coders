@@ -742,25 +742,33 @@ function movePuma() {
     const pumaRect = puma.getBoundingClientRect();
     const walls = document.querySelectorAll('.blocker-wall, .blocker');
     const pumaWidth = 180;
-    
+
+    // --- Nuevo comportamiento: seguir al jugador ---
+    const dx = playerX - pumaX;
+    if (Math.abs(dx) > 10) {
+        pumaDirection = dx > 0 ? 1 : -1;
+        pumaX += pumaSpeed * pumaDirection;
+        // Animación de dirección
+        if (pumaDirection > 0) {
+            puma.classList.remove('puma-facing-left');
+            puma.classList.add('puma-facing-right');
+        } else {
+            puma.classList.remove('puma-facing-right');
+            puma.classList.add('puma-facing-left');
+        }
+    }
+
+    // Limitar dentro del escenario
     if (pumaX <= 0) {
         pumaX = 0;
-        pumaDirection = 1;
-        puma.classList.remove('puma-facing-left');
-        puma.classList.add('puma-facing-right');
-        return;
     } else if (pumaX >= stageWidth - pumaWidth) {
         pumaX = stageWidth - pumaWidth;
-        pumaDirection = -1;
-        puma.classList.remove('puma-facing-right');
-        puma.classList.add('puma-facing-left');
-        return;
     }
-    
+
+    // Colisión con paredes
     let willCollide = false;
     for (const wall of walls) {
         const wallRect = wall.getBoundingClientRect();
-        
         const nextX = pumaX + (pumaSpeed * pumaDirection);
         const nextRect = {
             left: nextX,
@@ -768,7 +776,6 @@ function movePuma() {
             top: wallRect.top,
             bottom: pumaRect.bottom
         };
-        
         if (nextRect.right > wallRect.left + 5 && 
             nextRect.left < wallRect.right - 5 &&
             nextRect.bottom > wallRect.top + 5) {
@@ -776,7 +783,6 @@ function movePuma() {
             break;
         }
     }
-    
     if (willCollide) {
         pumaDirection *= -1;
         if (pumaDirection > 0) {
@@ -788,25 +794,25 @@ function movePuma() {
         }
         return;
     }
-    
+
+    // Ataque si está cerca
     const playerRect = player.getBoundingClientRect();
     if (Math.abs(playerRect.left - pumaRect.left) < 150 && 
         Math.abs(playerRect.bottom - pumaRect.bottom) < 50) {
         isPumaAttacking = true;
         puma.style.backgroundImage = "url('Resources/Mobs/panther_atk.png')";
-        
         setTimeout(() => {
             isPumaAttacking = false;
             puma.style.backgroundImage = "url('Resources/Mobs/panther_idle.png')";
         }, 500);
         return;
     }
-    
+
     if (!isPumaAttacking) {
-        pumaX += pumaSpeed * pumaDirection;
         updateCharacterPosition(puma, pumaX, pumaY);
     }
 }
+
 
 function startAttackSequence() {
     eagleState = "charging";
