@@ -1,19 +1,25 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Reglas para la colección de usuarios
+    match /users/{userId} {
+      // Solo el propio usuario puede leer o escribir sus datos de perfil
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Reglas para la colección de puntajes (Leaderboard)
+    match /scores/{scoreId} {
+      // Cualquiera puede leer los puntajes para ver el Leaderboard
+      allow read: if true;
+      // Solo usuarios autenticados pueden registrar nuevos puntajes
+      allow create: if request.auth != null;
+      // No se permite modificar o borrar puntajes una vez registrados
+      allow update, delete: if false;
+    }
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
+    // Regla por defecto para otras colecciones (como testCollection)
     match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 9, 24);
+      allow read, write: if request.auth != null;
     }
   }
 }
