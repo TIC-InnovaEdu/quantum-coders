@@ -11,6 +11,7 @@ let eagleDiveHasHit = false;
 let hasShield = false;
 let eagleDefeated = false;
 let gameOverActive = false; // Bloqueo de juego tras Game Over
+let isGamePaused = false; // Control de pausa
 
 
 // Constantes del juego
@@ -162,30 +163,6 @@ let playerRecentlyHit = false;
 // Eventos de teclado
 document.addEventListener('keyup', e => keysPressed[e.key] = false);
 
-document.addEventListener('keydown', (e) => {
-    keysPressed[e.key] = true;
-
-    if (scene === 0 && e.key.toLowerCase() === 'b') {
-        document.getElementById('introScene').style.display = 'none';
-        scene = 1;
-        talkedToNPC = false;
-        for (let key in keysPressed) {
-            keysPressed[key] = false;
-        }
-        return;
-    }
-
-    if (scene !== 0) {
-        if ((e.key === 'a' || e.key === 'A')) handlePlayerAttack();
-        if ((e.key === 'b' || e.key === 'B')) checkNPCInteraction();
-        if (e.key === 'ArrowDown' && isOnPlatform()) {
-            playerY -= 5;
-            isJumping = true;
-            return;
-        }
-    }
-});
-
 function showRunaForScene() {
     // Oculta todas las runas
     for (let i = 4; i <= 8; i++) {
@@ -260,7 +237,7 @@ function applyGravity() {
     }
 }
 
-function playSceneMusic(sceneKey) {
+window.playSceneMusic = function(sceneKey) {
     // Detener música actual si hay una reproduciéndose
     if (currentAudio) {
         currentAudio.pause();
@@ -272,9 +249,26 @@ function playSceneMusic(sceneKey) {
         currentAudio = audioTracks[sceneKey];
         currentAudio.loop = true;
         currentAudio.volume = 0.9; 
-        currentAudio.play().catch(error => {
-            console.log("Error reproduciendo música:", error);
-        });
+        
+        const startPlayback = () => {
+            currentAudio.play().catch(error => {
+                if (error.name === 'NotAllowedError') {
+                    console.warn("Reproducción automática bloqueada. Esperando interacción del usuario...");
+                    // Reintentar en el primer clic o tecla si fue bloqueado
+                    const retry = () => {
+                        currentAudio.play().catch(() => {});
+                        document.removeEventListener('click', retry);
+                        document.removeEventListener('keydown', retry);
+                    };
+                    document.addEventListener('click', retry);
+                    document.addEventListener('keydown', retry);
+                } else {
+                    console.error("Error reproduciendo música:", error);
+                }
+            });
+        };
+
+        startPlayback();
     }
 }
 
@@ -541,6 +535,8 @@ function updateLifeBar() {
         const img = document.createElement('img');
         img.id = 'lifeImage';
         newLifeContainer.appendChild(img);
+    } else {
+        lifeContainer.style.display = 'block';
     }
     
     // Actualizar imagen según vidas
@@ -558,6 +554,8 @@ function updateLifeBar() {
 }
 
 function updateWisdomBar() {
+    const wisdomBar = document.getElementById('wisdom-bar');
+    if (wisdomBar) wisdomBar.style.display = 'block';
     document.getElementById('wisdom-points').textContent = wisdomPoints;
 }
 
@@ -648,26 +646,104 @@ function showGameOver() {
     // Oscurecer pantalla
     overlay.style.background = "rgba(0, 0, 0, 0.85)";
 
-    // --- Preparar datos que se guardarán en Firestore ---
-    window.finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
-
-    window.finalGameData = {
-      score: window.finalScore,
+    // --- Preparar datos para el Resumen y Auto-guardado ---
+    const finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
+    const finalGameData = {
+      score: finalScore,
       wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
       levelReached: (typeof scene !== 'undefined') ? scene : null,
       runasCollected: typeof runasCollected !== 'undefined' ? runasCollected : 0,
       enemiesDefeated: typeof enemiesDefeated !== 'undefined' ? enemiesDefeated : 0,
-      timestamp: new Date().toISOString()
+      playerWon: false
     };
 
-    // Solo mostrar el formulario si realmente es Game Over
-    if (playerLives <= 0 && typeof window.promptSaveScore === 'function') {
+    // Mostrar resumen y guardar automáticamente
+    if (typeof window.showGameSummary === 'function') {
       setTimeout(() => {
-        window.promptSaveScore(window.finalScore);
-      }, 150);
+        window.showGameSummary(finalGameData);
+      }, 1500); // Dar un poco de tiempo para ver el mensaje de Game Over
+    } else {
+      setTimeout(() => {
+        window.showMenu();
+      }, 1500);
     }
-    // Nota: no recargamos inmediatamente para dar tiempo a que el jugador guarde.
 }
+
+function resetGameState() {
+    // Reiniciar estados lógicos
+    gameOverActive = false;
+    isGamePaused = false;
+    scene = 0;
+    playerLives = 4;
+    wisdomPoints = 0;
+    runasCollected = 0;
+    enemiesDefeated = 0;
+    playerX = 0;
+    playerY = 100;
+    velocityY = 0;
+    isJumping = false;
+    isAttacking = false;
+    talkedToNPC = false;
+    pumaDefeated = false;
+    pumaLives = 6;
+    eagleDefeated = false;
+    eagleLives = 7;
+    eagleState = "idle";
+    currentPhase = 1;
+    
+    // Limpiar UI
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('overlay').style.background = "transparent";
+    document.getElementById('menuStats').style.display = 'none';
+    document.getElementById('restartButton').style.display = 'none';
+    document.getElementById('gameTitle').textContent = "RUNA PACHAWAN";
+    document.getElementById('playButton').textContent = "Iniciar Aventura";
+    
+    // Limpiar proyectiles y enemigos
+    feathers.forEach(f => f.element.remove());
+    feathers.length = 0;
+    apples.forEach(a => a.element.remove());
+    apples.length = 0;
+    projectiles.forEach(p => p.element.remove());
+    projectiles.length = 0;
+    
+    // Resetear HUD
+    updateLifeBar();
+    updateWisdomBar();
+    
+    // Ocultar escenas específicas
+    document.querySelectorAll('[class^="platforms-scene-"]').forEach(el => el.style.display = 'none');
+    document.querySelector('.platforms-scene-1').style.display = 'block';
+    
+    // Ocultar enemigos de escenas
+    if (document.getElementById('puma')) document.getElementById('puma').style.display = 'none';
+    if (document.getElementById('eagleBoss')) document.getElementById('eagleBoss').style.display = 'none';
+    
+    // Ocultar jugador y HUD
+    const player = document.getElementById('player');
+    if (player) player.style.display = 'none';
+    
+    const hudElements = ['life-bar', 'wisdom-bar', 'player-nick-hud', 'overlay'];
+    hudElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === 'overlay') el.style.background = "transparent";
+            else el.style.display = 'none';
+        }
+    });
+}
+
+// Agregar listener para el botón de reiniciar
+document.addEventListener('DOMContentLoaded', () => {
+    const restartBtn = document.getElementById('restartButton');
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            resetGameState();
+            // Iniciar el flujo de juego normal
+            document.getElementById('playButton').click();
+        });
+    }
+});
 
 function isOnPlatform() {
     const platforms = scene === 3
@@ -1620,7 +1696,10 @@ function startScene8() {
 
 
 function gameLoop() {
-    if (gameOverActive) return; // Detener el loop si es Game Over
+    if (gameOverActive || isGamePaused) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
     movePlayer();
     checkNPCInteraction();
 
@@ -1689,34 +1768,25 @@ function showFinalThanksAndReturnToMenu() {
                 currentAudio.currentTime = 0;
             }
             
-            document.querySelectorAll('.platforms-scene-8, #player, #background, #floor, #life-bar, #wisdom-bar').forEach(el => {
+            document.querySelectorAll('.platforms-scene-8, #player, #background, #floor, #life-bar, #wisdom-bar, #player-nick-hud').forEach(el => {
                 el.style.display = 'none';
             });
             
-            document.getElementById("menu").style.display = "flex";
-            
-            scene = 0;
-            playerLives = 4;
-            wisdomPoints = 0;
-            updateLifeBar();
-            updateWisdomBar();
-            
-            playSceneMusic('menu');
-
-            // --- Mostrar encuesta de puntuación al ganar ---
-            window.finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
-            window.finalGameData = {
-              score: window.finalScore,
+            // --- Preparar datos para el Resumen de Victoria ---
+            const finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
+            const finalGameData = {
+              score: finalScore,
               wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
-              levelReached: (typeof scene !== 'undefined') ? scene : null,
+              levelReached: 8,
               runasCollected: typeof runasCollected !== 'undefined' ? runasCollected : 0,
               enemiesDefeated: typeof enemiesDefeated !== 'undefined' ? enemiesDefeated : 0,
-              timestamp: new Date().toISOString()
+              playerWon: true
             };
-            if (typeof window.promptSaveScore === 'function') {
-                setTimeout(() => {
-                    window.promptSaveScore(window.finalScore);
-                }, 300);
+
+            if (typeof window.showGameSummary === 'function') {
+                window.showGameSummary(finalGameData);
+            } else {
+                window.showMenu();
             }
         }, 2000); 
     });
@@ -1815,7 +1885,38 @@ function checkQuizAnswer() {
 
 
 document.getElementById("playButton").addEventListener("click", () => {
+    if (!window.getCurrentUser || !window.getCurrentUser()) {
+        if (typeof window.__authHandlersInit === "function") window.__authHandlersInit();
+        if (typeof window.showAuth === "function") window.showAuth();
+        return;
+    }
+    
+    // Si el juego está pausado, simplemente despausamos
+    if (isGamePaused) {
+        window.togglePause();
+        return;
+    }
+
+    // Si el juego terminó, reiniciamos (aunque ahora tenemos un botón específico para esto, 
+    // mantenemos compatibilidad si el texto cambia a "Volver a Intentar")
+    if (gameOverActive) {
+        resetGameState();
+    }
+
+    // Actualizar HUD con información del jugador
+    if (typeof window.updateGameHUD === 'function') {
+        window.updateGameHUD();
+    }
+
     document.getElementById("menu").style.display = "none";
+    
+    // Asegurar que el contenedor del juego y el jugador sean visibles
+    const gameContainer = document.getElementById("game-container");
+    if (gameContainer) gameContainer.style.display = "block";
+    
+    const player = document.getElementById("player");
+    if (player) player.style.display = "block";
+
     playSceneMusic('scene1');
     document.getElementById("introScene").style.display = "flex";
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/fa_floor.png')";
@@ -1827,26 +1928,131 @@ document.getElementById("playButton").addEventListener("click", () => {
 });
 
 window.addEventListener('load', () => {
-    playSceneMusic('menu');
     // Advertencia para ejecución local
     if (location.protocol === 'file:') {
         console.warn("Estás ejecutando el juego en modo local (file://). Algunos recursos o scripts pueden no funcionar correctamente. Usa Live Server o sube a GitHub Pages para la experiencia completa.");
     }
+    if (typeof window.__authHandlersInit === "function") window.__authHandlersInit();
+    if (!window.getCurrentUser || !window.getCurrentUser()) {
+        if (typeof window.showAuth === "function") window.showAuth();
+    } else {
+        if (typeof window.showMenu === "function") window.showMenu();
+    }
 });
 
-document.getElementById("exitButton").addEventListener("click", () => {
-  window.close();
-});
+const exitBtn = document.getElementById("exitButton");
+if (exitBtn) {
+    exitBtn.addEventListener("click", () => {
+        window.close();
+    });
+}
 
-// Bloquear controles si es Game Over
+const logoutBtn = document.getElementById("logoutButton");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    // Detener música y limpiar estado
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    
+    // Ocultar elementos del juego si estaban visibles
+    document.getElementById('game-container').style.display = 'none';
+    document.getElementById('introScene').style.display = 'none';
+    
+    // Reiniciar estado
+    if (typeof resetGameState === 'function') {
+      resetGameState();
+    }
+
+    if (typeof window.authSignOut === "function") {
+      window.authSignOut();
+    } else {
+      location.reload();
+    }
+  });
+}
+
+const leaderboardBtn = document.getElementById("leaderboardButton");
+if (leaderboardBtn) {
+    leaderboardBtn.addEventListener("click", () => {
+        if (typeof window.showLeaderboard === "function") {
+            window.showLeaderboard();
+        }
+    });
+}
+
+// window.togglePause function definition
+window.togglePause = function() {
+    const menu = document.getElementById('menu');
+    const menuVisible = menu.style.display !== 'none';
+    const authVisible = document.getElementById('authScreen').style.display !== 'none';
+    const introVisible = document.getElementById('introScene').style.display !== 'none';
+    
+    // Solo pausar si estamos en gameplay real (no en menús iniciales)
+    if (authVisible || introVisible || gameOverActive) return;
+
+    isGamePaused = !isGamePaused;
+    
+    if (isGamePaused) {
+        if (menu) {
+            menu.style.display = 'flex';
+            document.getElementById('playButton').textContent = "Continuar Aventura";
+            document.getElementById('menuStats').style.display = 'none';
+            document.getElementById('gameTitle').textContent = "PAUSA";
+        }
+    } else {
+        if (menu) menu.style.display = 'none';
+        // Cerrar también el leaderboard si estaba abierto sobre la pausa
+        const leaderboard = document.getElementById('leaderboardModal');
+        if (leaderboard) leaderboard.style.display = 'none';
+    }
+};
+
+// Bloquear controles si es Game Over o Pausa
 document.addEventListener('keydown', (e) => {
     if (gameOverActive) return;
-    // ...existing code...
-});
 
-// Modifica el handler de "Cancelar" del modal desde el HTML/Firebase script
-// Pero también puedes agregar este handler aquí para asegurar el bloqueo:
-document.getElementById('modalCancel').addEventListener('click', function() {
-    // Al cancelar, recarga la página para volver al menú y bloquear el juego
-    location.reload();
+    // Tecla ESC para pausa
+    if (e.key === 'Escape') {
+        window.togglePause();
+        return;
+    }
+
+    if (isGamePaused) return; // No permitir otros movimientos en pausa
+
+    keysPressed[e.key] = true;
+
+    if (scene === 0 && e.key.toLowerCase() === 'b') {
+        document.getElementById('introScene').style.display = 'none';
+        
+        // Asegurar visibilidad de los elementos del juego
+        const gameContainer = document.getElementById('game-container');
+        if (gameContainer) gameContainer.style.display = 'block';
+        
+        const playerEl = document.getElementById('player');
+        if (playerEl) playerEl.style.display = 'block';
+
+        // Ocultar todas las escenas y mostrar solo la 1
+        document.querySelectorAll('[class^="platforms-scene-"]').forEach(el => el.style.display = 'none');
+        const scene1El = document.querySelector('.platforms-scene-1');
+        if (scene1El) scene1El.style.display = 'block';
+
+        scene = 1;
+        talkedToNPC = false;
+        for (let key in keysPressed) {
+            keysPressed[key] = false;
+        }
+        return;
+    }
+
+    if (scene !== 0) {
+        if ((e.key === 'a' || e.key === 'A')) handlePlayerAttack();
+        if ((e.key === 'b' || e.key === 'B')) checkNPCInteraction();
+        if (e.key === 'ArrowDown' && isOnPlatform()) {
+            playerY -= 5;
+            isJumping = true;
+            return;
+        }
+    }
 });
