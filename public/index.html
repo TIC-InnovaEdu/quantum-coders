@@ -164,6 +164,12 @@
         msg.textContent = "Guardando partida automáticamente...";
         msg.style.color = "#ffd700";
 
+        // Ocultar avisos de Ayllu y Quizzes si están visibles
+        const aylluWarning = document.getElementById('ayllu-warning');
+        if (aylluWarning) aylluWarning.style.display = 'none';
+        const quizContainer = document.getElementById('runa-quiz-container');
+        if (quizContainer) quizContainer.style.display = 'none';
+
         menu.style.display = 'flex';
 
         try {
@@ -399,6 +405,12 @@
         if (!authScreen || !menu) return;
         authScreen.style.display = "none";
         menu.style.display = "flex";
+
+        // Ocultar avisos de Ayllu y Quizzes
+        const aylluWarning = document.getElementById('ayllu-warning');
+        if (aylluWarning) aylluWarning.style.display = 'none';
+        const quizContainer = document.getElementById('runa-quiz-container');
+        if (quizContainer) quizContainer.style.display = 'none';
 
         // Actualizar el HUD para que se muestre en el menú
         if (typeof window.updateGameHUD === 'function') {

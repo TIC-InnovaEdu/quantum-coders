@@ -630,7 +630,6 @@ body, html {
     transform: translateX(-50%);
     display: none;   
     z-index: 2000;   
-    display: flex;
     align-items: center;
     gap: 15px;
 }
