@@ -8,6 +8,7 @@
   "hosting": {
     "public": "public",
     "ignore": [
+      "quantum-coders-main/**",
       "firebase.json",
       "**/.*",
       "**/node_modules/**"

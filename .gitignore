@@ -1,0 +1,15 @@
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Project specific
+public/index.html.bak
+quantum-coders-main/
