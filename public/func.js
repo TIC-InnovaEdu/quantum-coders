@@ -669,6 +669,8 @@ function showGameOver() {
     }
 }
 
+let gameLoopRunning = false;
+
 function resetGameState() {
     // Reiniciar estados lógicos
     gameOverActive = false;
@@ -711,17 +713,29 @@ function resetGameState() {
     updateLifeBar();
     updateWisdomBar();
     
-    // Ocultar escenas específicas
+    // Resetear fondo a la escena inicial
+    const bg = document.getElementById('background');
+    if (bg) bg.style.backgroundImage = "url('Resources/Backgrounds/BackGround1.png')";
+    
+    // Ocultar todas las escenas y mostrar solo la 1
     document.querySelectorAll('[class^="platforms-scene-"]').forEach(el => el.style.display = 'none');
-    document.querySelector('.platforms-scene-1').style.display = 'block';
+    const scene1El = document.querySelector('.platforms-scene-1');
+    if (scene1El) scene1El.style.display = 'block';
+    
+    // Mostrar NPC y trigger de la escena 1
+    if (ayllu) ayllu.style.display = 'block';
+    if (trigger) trigger.style.display = 'block';
+    
+    // Mostrar todas las runas
+    document.querySelectorAll('.collectible').forEach(el => el.style.display = 'block');
     
     // Ocultar enemigos de escenas
     if (document.getElementById('puma')) document.getElementById('puma').style.display = 'none';
     if (document.getElementById('eagleBoss')) document.getElementById('eagleBoss').style.display = 'none';
     
-    // Ocultar jugador y HUD
-    const player = document.getElementById('player');
-    if (player) player.style.display = 'none';
+    // Ocultar jugador y HUD inicialmente (se mostrarán al pulsar "Play")
+    const playerEl = document.getElementById('player');
+    if (playerEl) playerEl.style.display = 'none';
     
     const hudElements = ['life-bar', 'wisdom-bar', 'player-nick-hud', 'overlay'];
     hudElements.forEach(id => {
@@ -738,6 +752,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const restartBtn = document.getElementById('restartButton');
     if (restartBtn) {
         restartBtn.addEventListener('click', () => {
+            // Si el juego no ha terminado (es decir, estamos en pausa), pedir confirmación
+            if (!gameOverActive) {
+                const confirmRestart = confirm("¿Estás seguro de que quieres reiniciar la partida? Perderás todo tu progreso actual.");
+                if (!confirmRestart) return;
+            }
+            
             resetGameState();
             // Iniciar el flujo de juego normal
             document.getElementById('playButton').click();
@@ -1447,6 +1467,7 @@ function startIntroScene() {
     const introDiv = document.getElementById('introText');
     const continuePrompt = document.getElementById('continuePrompt');
 
+    if (writingInterval) clearInterval(writingInterval);
     introDiv.innerHTML = ""; 
     continuePrompt.style.display = 'none';
     currentChar = 0;
@@ -1696,6 +1717,7 @@ function startScene8() {
 
 
 function gameLoop() {
+    gameLoopRunning = true;
     if (gameOverActive || isGamePaused) {
         requestAnimationFrame(gameLoop);
         return;
@@ -1924,7 +1946,11 @@ document.getElementById("playButton").addEventListener("click", () => {
     startIntroScene(); 
     updateLifeBar();
     updateWisdomBar();
-    gameLoop();
+    
+    // Solo iniciar el loop si no está ya corriendo
+    if (!gameLoopRunning) {
+        gameLoop();
+    }
 });
 
 window.addEventListener('load', () => {
@@ -1998,8 +2024,15 @@ window.togglePause = function() {
         if (menu) {
             menu.style.display = 'flex';
             document.getElementById('playButton').textContent = "Continuar Aventura";
+            document.getElementById('restartButton').style.display = 'block';
             document.getElementById('menuStats').style.display = 'none';
             document.getElementById('gameTitle').textContent = "PAUSA";
+            
+            // Ocultar avisos de Ayllu y Quizzes
+            const aylluWarning = document.getElementById('ayllu-warning');
+            if (aylluWarning) aylluWarning.style.display = 'none';
+            const quizContainer = document.getElementById('runa-quiz-container');
+            if (quizContainer) quizContainer.style.display = 'none';
         }
     } else {
         if (menu) menu.style.display = 'none';
