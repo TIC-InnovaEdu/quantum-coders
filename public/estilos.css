@@ -798,6 +798,337 @@ body, html {
 }
 
 /* Asegurar visibilidad en dispositivos móviles */
+
+/* ---------- Pantalla de Autenticación ---------- */
+.auth-card {
+  background: #d2a679;
+  border: 5px solid #a66e00;
+  padding: 20px;
+  width: 420px;
+  border-radius: 12px;
+  text-align: left;
+  font-family: 'Cinzel', 'Papyrus', serif;
+  box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.5);
+}
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.auth-tabs button {
+  flex: 1;
+  padding: 8px 12px;
+  background-color: #9c3d0f;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+.auth-tabs button.active {
+  background-color: #a66e00;
+}
+.auth-form label {
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+.auth-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 2px solid #a66e00;
+  background: #f2e1c1;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+.auth-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.auth-actions .primary {
+  font-size: 1em;
+  padding: 10px 24px;
+  margin: 6px 0;
+  background-color: #9c3d0f;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+}
+.auth-message {
+  margin-top: 8px;
+  color: #000;
+  background: rgba(0,0,0,0.1);
+  padding: 6px 8px;
+  border-radius: 6px;
+  min-height: 24px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 15px 0;
+  color: #4b2f17;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #a66e00;
+}
+
+.auth-divider:not(:empty)::before {
+  margin-right: .25em;
+}
+
+.auth-divider:not(:empty)::after {
+  margin-left: .25em;
+}
+
+.google-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: white;
+  color: #757575;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.google-btn:hover {
+  background-color: #f7f7f7;
+}
+
+/* ---------- Panel de Información del Jugador ---------- */
+.player-info-card {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #a66e00;
+  border-radius: 15px;
+  padding: 15px 25px;
+  margin-bottom: 25px;
+  min-width: 300px;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.player-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #ffd700;
+  overflow: hidden;
+  margin-right: 20px;
+  background: #f2e1c1;
+}
+
+.player-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-details h3 {
+  margin: 0;
+  color: #ffd700;
+  font-size: 1.6em;
+  text-shadow: 2px 2px 4px #000;
+}
+
+.player-status-tag {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 0.8em;
+  color: #4CAF50;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+/* ---------- HUD: Nickname del Jugador ---------- */
+#player-nick-hud {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 8px 20px;
+  border-radius: 40px;
+  border: 2px solid #ffd700;
+  z-index: 2000;
+  color: white;
+  font-family: 'Cinzel', serif;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 250px; /* Aumentado de 200px a 250px */
+  max-width: 450px; /* Aumentado de 350px a 450px */
+}
+
+#player-nick-hud:hover {
+  background: rgba(44, 30, 15, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(255, 215, 0, 0.2);
+}
+
+#hud-player-photo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  margin-right: 12px;
+  border: 2px solid #ffd700;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: #2c1e0f;
+}
+
+#hud-name-container {
+  flex-grow: 1;
+  overflow: hidden;
+  margin-right: 12px;
+}
+
+#hud-player-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  text-shadow: 1px 1px 2px black;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.menu-arrow {
+  font-size: 0.7em;
+  color: #ffd700;
+  transition: transform 0.3s;
+}
+
+/* Menú Desplegable eliminado - Se usa menú de pausa modal */
+
+/* ---------- Resumen de Partida (Modal) ---------- */
+.summary-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(8px);
+}
+
+.summary-box {
+  background: linear-gradient(145deg, #2c1e0f, #4a3416);
+  border: 3px solid #ffd700;
+  border-radius: 20px;
+  padding: 40px;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+.summary-box h2 {
+  color: #ffd700;
+  font-size: 2em;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px black;
+}
+
+.summary-stats {
+  margin-bottom: 30px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+  padding-bottom: 5px;
+}
+
+.stat-label {
+  color: #ddd;
+}
+
+.stat-value {
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.auto-save-status {
+  margin-top: 20px;
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* ---------- Leaderboard Table ---------- */
+.leaderboard-container {
+  max-height: 350px;
+  overflow-y: auto;
+  margin: 10px 0;
+  padding-right: 5px;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+  font-size: 1.1em;
+}
+
+.leaderboard-table th {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  padding: 12px;
+  position: sticky;
+  top: 0;
+  border-bottom: 2px solid #ffd700;
+}
+
+.leaderboard-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-table tr:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.leaderboard-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.leaderboard-container::-webkit-scrollbar-thumb {
+  background: #ffd700;
+  border-radius: 4px;
+}
+
+.google-btn img {
+  width: 20px;
+  height: 20px;
+}
 @media (max-width: 500px) {
   #saveScoreBox { max-width: 94vw; padding: 14px; }
   #saveScoreBox h3 { font-size: 16px; }

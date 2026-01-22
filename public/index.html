@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Runa Pachawan - Grupo 10</title>
+    <title>Runa Pachawan</title>
     <link rel="stylesheet" href="estilos.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Papyrus&display=swap" rel="stylesheet">
     
     <!-- ADVERTENCIA PARA DESARROLLO LOCAL -->
     <!--
@@ -15,31 +16,100 @@
 
     <script type="module">
       // Import the functions you need from the SDKs you need
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-app.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
       import {
         getFirestore,
         collection,
+        doc,
+        setDoc,
         addDoc,
-        getDocs
-      } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
+        getDocs,
+        query,
+        orderBy,
+        limit,
+        connectFirestoreEmulator
+      } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
+        signOut,
+        GoogleAuthProvider,
+        signInWithPopup,
+        connectAuthEmulator
+      } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
       // Your web app's Firebase configuration
       const firebaseConfig = {
-        apiKey: "AIzaSyDAEwufyWjRtxvWpG3XiVD1TekeABK6Yjs",
-        authDomain: "quantum-coders-3d4ca.firebaseapp.com",
-        projectId: "quantum-coders-3d4ca",
-        storageBucket: "quantum-coders-3d4ca.firebasestorage.app",
-        messagingSenderId: "870775316580",
-        appId: "1:870775316580:web:f62da8a3e62615eccc3f71",
-        measurementId: "G-551EQ283PK"
+        apiKey: "AIzaSyB2LACkwgSgpO3ee-4BO-UYuKHLdNmt-Xk",
+        authDomain: "practicas-comunitarias-a63ba.firebaseapp.com",
+        projectId: "practicas-comunitarias-a63ba",
+        storageBucket: "practicas-comunitarias-a63ba.firebasestorage.app",
+        messagingSenderId: "788502250286",
+        appId: "1:788502250286:web:eba1b87f6cea11647330bf",
+        measurementId: "G-D0QN0BW178"
       };
 
-      // Initialize Firebase
+      // Inicializar Firebase
       const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
       const db = getFirestore(app);
+      let auth = null;
+      try {
+        auth = getAuth(app);
+        // Habilitar persistencia local (opcional pero recomendado)
+        // setPersistence(auth, browserLocalPersistence);
+      } catch (e) {
+        console.warn("Auth no disponible; se usará almacenamiento local.");
+      }
 
       window.firebaseApp = app;
       window.firebaseDB = db;
+      window.firebaseAuth = auth;
+
+      // Escuchar cambios de autenticación para sincronizar UI
+      if (auth) {
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            console.log("Usuario autenticado en Firebase:", user.email);
+            const userData = {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName || user.email.split('@')[0],
+              photoURL: user.photoURL
+            };
+            lsSetUser(userData);
+            syncUserToFirestore(user);
+            showMenu();
+            // Actualizar HUD inmediatamente al detectar sesión
+            if (typeof window.updateGameHUD === 'function') {
+              window.updateGameHUD();
+            }
+          } else {
+            console.log("Sin sesión de Firebase. Limpiando...");
+            lsClearUser();
+            showAuth();
+            if (typeof window.updateGameHUD === 'function') {
+              window.updateGameHUD();
+            }
+          }
+        });
+      } else {
+        // Si por algún motivo auth no carga, volvemos a pedir login
+        showAuth();
+      }
+      try {
+        const useEmu = new URLSearchParams(location.search).get("emu") === "1";
+        if (useEmu) {
+          connectFirestoreEmulator(db, "localhost", 8080);
+          if (auth) connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+          console.info("Usando emuladores de Firebase (emu=1).");
+        }
+      } catch (e) {
+        console.warn("No se pudo conectar a los emuladores:", e);
+      }
 
       // Funciones de prueba (opcionales)
       window.testWrite = async function () {
@@ -70,65 +140,524 @@
         }
       };
 
-      // Exponer función global para mostrar el modal y guardar score
-      window.promptSaveScore = async function(score) {
-        const modal = document.getElementById('saveScoreModal');
-        const scoreInput = document.getElementById('scoreInput');
-        const dateInput = document.getElementById('dateInput');
-        const message = document.getElementById('saveScoreMessage');
-        scoreInput.value = score;
-        dateInput.value = new Date().toLocaleString();
-        modal.setAttribute('aria-hidden', 'false');
-        message.textContent = "";
+      // Exponer función global para mostrar el resumen y guardar automáticamente
+      window.showGameSummary = async function(data) {
+        const menu = document.getElementById('menu');
+        const stats = document.getElementById('menuStats');
+        const mainTitle = document.getElementById('gameTitle');
+        const title = document.getElementById('menuStatusTitle');
+        const scoreVal = document.getElementById('menuScore');
+        const wisdomVal = document.getElementById('menuWisdom');
+        const msg = document.getElementById('menuMessage');
+        const playBtn = document.getElementById('playButton');
+        const restartBtn = document.getElementById('restartButton');
 
-        // Eliminar cualquier handler anterior
-        document.getElementById('saveScoreForm').onsubmit = null;
+        // Configurar UI para resumen
+        mainTitle.textContent = data.playerWon ? "¡VICTORIA!" : "¡FIN DEL JUEGO!";
+        title.textContent = data.playerWon ? "Has completado el viaje" : "Has perdido tus vidas";
+        scoreVal.textContent = data.score || 0;
+        wisdomVal.textContent = data.wisdomPoints || 0;
+        
+        stats.style.display = 'block';
+        restartBtn.style.display = 'block';
+        playBtn.textContent = "Volver a Intentar";
+        msg.textContent = "Guardando partida automáticamente...";
+        msg.style.color = "#ffd700";
 
-        // Guardar en Firestore al enviar
-        document.getElementById('saveScoreForm').onsubmit = async function(e) {
-          e.preventDefault();
-          const username = document.getElementById('usernameInput').value;
-          const realname = document.getElementById('realnameInput').value;
-          const score = parseInt(scoreInput.value, 10);
-          const date = dateInput.value;
+        menu.style.display = 'flex';
 
-          try {
-            await addDoc(collection(db, "scores"), {
-              username,
-              realname,
-              score,
-              date
+        try {
+          const current = window.getCurrentUser ? window.getCurrentUser() : null;
+          const userEmail = current && current.email ? current.email : "Invitado";
+          const userName = current && current.displayName ? current.displayName : "Jugador";
+          const userId = current && current.uid ? current.uid : "local_user";
+
+          await addDoc(collection(db, "scores"), {
+            username: userName,
+            email: userEmail,
+            userId: userId,
+            score: data.score,
+            wisdom: data.wisdomPoints,
+            level: data.levelReached,
+            runas: data.runasCollected,
+            enemiesDefeated: data.enemiesDefeated || 0,
+            date: new Date().toISOString(),
+            completed: !!data.playerWon
+          });
+
+          msg.textContent = "¡Partida guardada con éxito!";
+          msg.style.color = "#4CAF50";
+        } catch (err) {
+          console.error("Error auto-guardando:", err);
+          msg.textContent = "Error al guardar en la nube (se guardó localmente).";
+          msg.style.color = "#ff4444";
+        }
+      };
+
+      // Función para mostrar el Leaderboard
+      window.showLeaderboard = async function() {
+        const modal = document.getElementById('leaderboardModal');
+        const list = document.getElementById('leaderboardList');
+        
+        modal.style.display = 'flex';
+        list.innerHTML = "<p>Cargando mejores puntajes...</p>";
+
+        try {
+          const _db = window.firebaseDB;
+          const scoresRef = collection(_db, "scores");
+          const q = query(scoresRef, orderBy("score", "desc"), limit(10));
+          const snap = await getDocs(q);
+          
+          if (snap.empty) {
+            list.innerHTML = "<p>Aún no hay puntajes registrados.</p>";
+            return;
+          }
+
+          let docs = [];
+          snap.forEach(doc => {
+            const data = doc.data();
+            docs.push({
+              username: data.username || 'Anónimo',
+              score: data.score || 0,
+              level: data.level || 1
             });
-            message.textContent = "¡Puntuación guardada correctamente!";
+          });
+          
+          let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Jugador</th><th>Puntos</th><th>Nivel</th></tr></thead><tbody>`;
+          docs.forEach((d, i) => {
+            html += `<tr><td>${i+1}</td><td style="text-align: left;">${d.username}</td><td>${d.score}</td><td>${d.level}</td></tr>`;
+          });
+          html += `</tbody></table>`;
+          list.innerHTML = html;
+        } catch (err) {
+          console.error("Error leaderboard:", err);
+          list.innerHTML = "<p>Error al cargar puntajes.</p>";
+        }
+      };
+
+      // Manejar cierre del leaderboard
+      document.getElementById('closeLeaderboardBtn').onclick = () => {
+        document.getElementById('leaderboardModal').style.display = 'none';
+      };
+
+      // Función para actualizar el HUD con datos del usuario
+      window.updateGameHUD = function() {
+        const hudName = document.getElementById('hud-player-name');
+        const hudPhoto = document.getElementById('hud-player-photo');
+        const hudContainer = document.getElementById('player-nick-hud');
+        
+        const current = window.getCurrentUser ? window.getCurrentUser() : null;
+        const user = (window.firebaseAuth && window.firebaseAuth.currentUser) ? window.firebaseAuth.currentUser : null;
+
+        if (current || user) {
+          const fullName = user?.displayName || current?.displayName || user?.email?.split('@')[0] || "Jugador";
+          const firstName = fullName.trim().split(' ')[0];
+          const photo = user?.photoURL || "https://cdn-icons-png.flaticon.com/512/1144/1144760.png";
+          
+          if (hudName) hudName.textContent = firstName;
+          if (hudPhoto) hudPhoto.src = photo;
+          
+          const authVisible = document.getElementById('authScreen').style.display !== 'none';
+          if (hudContainer) hudContainer.style.display = authVisible ? 'none' : 'flex';
+        } else {
+          if (hudContainer) hudContainer.style.display = 'none';
+        }
+      };
+
+      // Cerrar menú al hacer clic fuera (obsoleto pero mantenido para otros modales si es necesario)
+      window.onclick = function(event) {
+        // Lógica de cierre de modales si fuera necesario
+      };
+
+      // Autenticación (Firebase Auth con fallback localStorage)
+      const LS_KEY = "qc_user";
+      const LS_USERS = "qc_users";
+      function lsGetUser() {
+        try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
+      }
+      function lsSetUser(user) { try { localStorage.setItem(LS_KEY, JSON.stringify(user)); } catch {} }
+      function lsClearUser() { try { localStorage.removeItem(LS_KEY); } catch {} }
+      function lsGetUsers() {
+        try { const raw = localStorage.getItem(LS_USERS); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+      }
+      function lsSetUsers(users) { try { localStorage.setItem(LS_USERS, JSON.stringify(users)); } catch {} }
+      async function hashPassword(pw) {
+        try {
+          const enc = new TextEncoder().encode(pw);
+          const buf = await crypto.subtle.digest("SHA-256", enc);
+          const arr = Array.from(new Uint8Array(buf));
+          return arr.map(b => b.toString(16).padStart(2, "0")).join("");
+        } catch {
+          return "plain:" + pw;
+        }
+      }
+      window.getCurrentUser = function() {
+        return lsGetUser();
+      };
+      window.authSignOut = async function() {
+        if (auth) { try { await signOut(auth); } catch(e) { console.warn(e); } }
+        lsClearUser();
+        showAuth();
+      };
+      async function authSignIn(username, password) {
+        // Firebase Auth requiere un formato de correo. 
+        // Convertimos el usuario en un correo virtual internamente.
+        const virtualEmail = username.includes("@") ? username : `${username.toLowerCase().trim()}@runapachawan.com`;
+        
+        if (!auth) {
+          console.error("Auth no inicializado. ProjectID:", firebaseConfig.projectId);
+          throw new Error("Servicio de autenticación no disponible.");
+        }
+        
+        try {
+          const cred = await signInWithEmailAndPassword(auth, virtualEmail, password);
+          const u = cred.user;
+          const user = {
+            uid: u && u.uid ? u.uid : null,
+            email: virtualEmail,
+            displayName: username
+          };
+          lsSetUser(user);
+          return user;
+        } catch (err) {
+          console.error("Error en authSignIn:", err.code, err.message);
+          throw err;
+        }
+      }
+      async function authRegister(name, username, password) {
+        const virtualEmail = username.includes("@") ? username : `${username.toLowerCase().trim()}@runapachawan.com`;
+        
+        if (!auth) {
+          console.error("Auth no inicializado. ProjectID:", firebaseConfig.projectId);
+          throw new Error("Servicio de autenticación no disponible.");
+        }
+        
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, virtualEmail, password);
+          const u = cred.user;
+          const user = {
+            uid: u && u.uid ? u.uid : null,
+            email: virtualEmail,
+            displayName: name || username
+          };
+          lsSetUser(user);
+          return user;
+        } catch (err) {
+          console.error("Error en authRegister:", err.code, err.message);
+          throw err;
+        }
+      }
+      async function authSignInGoogle() {
+        if (!auth) throw new Error("Servicio de autenticación no disponible.");
+        const provider = new GoogleAuthProvider();
+        try {
+          const result = await signInWithPopup(auth, provider);
+          const u = result.user;
+          const user = {
+            uid: u.uid,
+            email: u.email,
+            displayName: u.displayName || u.email.split('@')[0],
+            photoURL: u.photoURL
+          };
+          lsSetUser(user);
+          return user;
+        } catch (err) {
+          console.error("Error en authSignInGoogle:", err.code, err.message);
+          throw err;
+        }
+      }
+
+      function showAuth() {
+        const authScreen = document.getElementById("authScreen");
+        const menu = document.getElementById("menu");
+        if (!authScreen || !menu) return;
+        authScreen.style.display = "flex";
+        menu.style.display = "none";
+        
+        if (window.playSceneMusic) window.playSceneMusic('menu');
+      }
+      function showMenu() {
+        const authScreen = document.getElementById("authScreen");
+        const menu = document.getElementById("menu");
+        const label = document.getElementById("currentUserDisplay");
+        
+        if (window.playSceneMusic) window.playSceneMusic('menu');
+        
+        // Resetear estado visual del menú para el modo "Menú Principal"
+        document.getElementById('menuStats').style.display = 'none';
+        document.getElementById('restartButton').style.display = 'none';
+        document.getElementById('gameTitle').textContent = "RUNA PACHAWAN";
+        document.getElementById('playButton').textContent = "Iniciar Aventura";
+
+        const current = window.getCurrentUser ? window.getCurrentUser() : null;
+        
+        if (current) {
+          const name = current.displayName || current.name || current.email?.split('@')[0] || "Jugador";
+          if (label) label.textContent = "Jugador: " + name;
+        }
+
+        if (!authScreen || !menu) return;
+        authScreen.style.display = "none";
+        menu.style.display = "flex";
+
+        // Actualizar el HUD para que se muestre en el menú
+        if (typeof window.updateGameHUD === 'function') {
+          window.updateGameHUD();
+        }
+      }
+      window.showAuth = showAuth;
+      window.showMenu = showMenu;
+      
+      // Función para sincronizar datos de Auth con Firestore
+      async function syncUserToFirestore(user) {
+        if (!user || !user.uid) return;
+        try {
+          // Usar doc() y setDoc() para evitar duplicados, usando el UID como ID del documento
+          const userDocRef = doc(db, "users", user.uid);
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            username: user.displayName || user.email.split('@')[0],
+            email: user.email,
+            photoURL: user.photoURL || null,
+            lastLogin: new Date().toISOString()
+          }, { merge: true });
+        } catch (e) {
+          console.warn("Error sincronizando usuario a Firestore:", e);
+        }
+      }
+
+      // Los handlers se inicializan al cargar el DOM
+      function getFriendlyError(err) {
+        const code = err?.code || "";
+        console.error("Firebase Auth Error:", code, err);
+        
+        switch (code) {
+          case 'auth/invalid-credential':
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            return "Usuario o contraseña incorrectos.";
+          case 'auth/invalid-email':
+            return "El nombre de usuario no es válido.";
+          case 'auth/user-disabled':
+            return "Esta cuenta ha sido deshabilitada.";
+          case 'auth/email-already-in-use':
+            return "Este nombre de usuario ya está registrado.";
+          case 'auth/weak-password':
+            return "La contraseña es muy débil (mínimo 6 caracteres).";
+          case 'auth/configuration-not-found':
+          case 'auth/operation-not-allowed':
+            return "Error técnico: El método de autenticación no está habilitado en la consola de Firebase o la API Key es incorrecta para el proyecto '" + firebaseConfig.projectId + "'.";
+          case 'auth/network-request-failed':
+            return "Error de red. Revisa tu conexión a internet.";
+          case 'auth/too-many-requests':
+            return "Demasiados intentos. Inténtalo más tarde.";
+          case 'auth/popup-closed-by-user':
+            return "La ventana de inicio de sesión se cerró antes de completar.";
+          case 'auth/cancelled-popup-request':
+            return "Solo se permite una ventana de inicio de sesión a la vez.";
+          default:
+            return "Ocurrió un error inesperado. Código: " + code;
+        }
+      }
+
+      window.__authHandlersInit = function() {
+        const tabLogin = document.getElementById("tabLogin");
+        const tabRegister = document.getElementById("tabRegister");
+        const loginForm = document.getElementById("authLoginForm");
+        const registerForm = document.getElementById("authRegisterForm");
+        const logoutButton = document.getElementById("logoutButton");
+        
+        if (logoutButton) {
+          logoutButton.onclick = () => window.authSignOut();
+        }
+
+        if (!tabLogin || !tabRegister || !loginForm || !registerForm) return;
+        tabLogin.onclick = () => {
+          tabLogin.classList.add("active"); tabRegister.classList.remove("active");
+          loginForm.style.display = "block"; registerForm.style.display = "none";
+        };
+        tabRegister.onclick = () => {
+          tabRegister.classList.add("active"); tabLogin.classList.remove("active");
+          registerForm.style.display = "block"; loginForm.style.display = "none";
+        };
+        // Google Sign-In
+        const googleBtn = document.getElementById("btnGoogleLogin");
+        if (googleBtn) {
+          googleBtn.onclick = async () => {
+            const msg = document.getElementById("authLoginMessage");
+            if (msg) {
+              msg.textContent = "Conectando con Google...";
+              msg.style.color = "#ffd700";
+            }
+            googleBtn.disabled = true;
+            
+            try {
+              const provider = new GoogleAuthProvider();
+              const result = await signInWithPopup(auth, provider);
+              const user = result.user;
+              console.log("Google Sign-In exitoso:", user.displayName);
+              
+              const userData = {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName || user.email.split('@')[0],
+                photoURL: user.photoURL
+              };
+              lsSetUser(userData);
+              await syncUserToFirestore(user);
+              
+              if (msg) {
+                msg.textContent = "¡Bienvenido!";
+                msg.style.color = "#4CAF50";
+              }
+              
+              setTimeout(() => {
+                showMenu();
+                googleBtn.disabled = false;
+                if (typeof window.updateGameHUD === 'function') {
+                  window.updateGameHUD();
+                }
+              }, 500);
+            } catch (err) {
+              console.error("Error en Google Sign-In:", err);
+              if (msg) {
+                msg.textContent = getFriendlyError(err);
+                msg.style.color = "#ff4444";
+              }
+              googleBtn.disabled = false;
+            }
+          };
+        }
+
+        loginForm.onsubmit = async (e) => {
+          e.preventDefault();
+          const username = document.getElementById("loginEmail").value.trim();
+          const password = document.getElementById("loginPassword").value;
+          const msg = document.getElementById("authLoginMessage");
+          const btn = loginForm.querySelector("button");
+          
+          msg.textContent = "Iniciando sesión...";
+          btn.disabled = true;
+          
+          try { 
+            await authSignIn(username, password); 
+            msg.textContent = "¡Bienvenido!";
             setTimeout(() => {
-              modal.setAttribute('aria-hidden', 'true');
-              location.reload();
-            }, 1200);
-          } catch (err) {
-            message.textContent = "Error al guardar: " + err;
+              showMenu();
+              btn.disabled = false;
+            }, 500);
+          }
+          catch (err) { 
+            msg.textContent = getFriendlyError(err); 
+            btn.disabled = false;
           }
         };
-
-        // Cancelar y cerrar modal
-        document.getElementById('modalCancel').onclick = function() {
-          modal.setAttribute('aria-hidden', 'true');
+        registerForm.onsubmit = async (e) => {
+          e.preventDefault();
+          const name = document.getElementById("regName").value.trim();
+          const username = document.getElementById("regEmail").value.trim();
+          const password = document.getElementById("regPassword").value;
+          const msg = document.getElementById("authRegisterMessage");
+          const btn = registerForm.querySelector("button");
+          
+          msg.textContent = "Creando cuenta...";
+          btn.disabled = true;
+          
+          try { 
+            await authRegister(name, username, password); 
+            msg.textContent = "¡Cuenta creada!";
+            setTimeout(() => {
+              showMenu();
+              btn.disabled = false;
+            }, 500);
+          }
+          catch (err) { 
+            msg.textContent = getFriendlyError(err); 
+            btn.disabled = false;
+          }
         };
       };
+
+      // Inicializar handlers al cargar
+      window.addEventListener('DOMContentLoaded', () => {
+        if (window.__authHandlersInit) window.__authHandlersInit();
+      });
     </script>
 </head>
 <body>
-    <div id="menu" class="fullscreen">
-        <h1 id="gameTitle">RUNA PACHAWAN</h1>
-        <div class="menu-options">
-            <button id="playButton">Jugar</button>
-            <button id="exitButton">Salir</button>
+    <div id="authScreen" class="fullscreen" style="display: none;">
+      <h1 id="authTitle">RUNA PACHAWAN</h1>
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button id="tabLogin" class="active">Iniciar sesión</button>
+          <button id="tabRegister">Crear cuenta</button>
         </div>
-        <div class="controls">
-            <h3>Controles:</h3>
-            <p>🡆 🡄 🡅 🡇 - Moverse</p>
-            <p>A - Atacar</p>
-            <p>B - Interactuar</p>
+        <form id="authLoginForm" class="auth-form">
+          <label>Usuario</label>
+          <input id="loginEmail" type="text" class="auth-input" required placeholder="Tu nombre de usuario" />
+          <label>Contraseña</label>
+          <input id="loginPassword" type="password" class="auth-input" required />
+          <div class="auth-actions">
+            <button type="submit" class="primary">Entrar</button>
+          </div>
+          <div id="authLoginMessage" class="auth-message"></div>
+          <div class="auth-divider"><span>O continuar con</span></div>
+          <button type="button" id="btnGoogleLogin" class="google-btn">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
+            Google
+          </button>
+        </form>
+        <form id="authRegisterForm" class="auth-form" style="display:none;">
+          <label>Nombre Completo</label>
+          <input id="regName" type="text" class="auth-input" required maxlength="40" placeholder="Ej: Juan Pérez" />
+          <label>Usuario</label>
+          <input id="regEmail" type="text" class="auth-input" required placeholder="Ej: juanito123" />
+          <label>Contraseña</label>
+          <input id="regPassword" type="password" class="auth-input" required minlength="6" />
+          <div class="auth-actions">
+            <button type="submit" class="primary">Crear cuenta</button>
+          </div>
+          <div id="authRegisterMessage" class="auth-message"></div>
+        </form>
+      </div>
+    </div>
+    <!-- Menú Universal (Control Center) -->
+    <div id="menu" class="summary-modal" style="display: none;">
+      <div class="summary-box" style="max-width: 500px;">
+        <h1 id="gameTitle" style="font-size: 2.5em; margin-bottom: 20px;">RUNA PACHAWAN</h1>
+        
+        <!-- Sección de Estadísticas (Solo visible en Game Over / Victoria) -->
+        <div id="menuStats" class="summary-stats" style="display: none;">
+            <h2 id="menuStatusTitle" style="font-size: 1.5em; margin-bottom: 15px;">Resumen</h2>
+            <div class="stat-item">
+                <span class="stat-label">Puntuación:</span>
+                <span id="menuScore" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Sabiduría:</span>
+                <span id="menuWisdom" class="stat-value">0</span>
+            </div>
+            <p id="menuMessage" class="auto-save-status"></p>
         </div>
+
+        <div class="menu-options" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+            <button id="playButton" class="primary" style="font-size: 1.3em; padding: 12px;">Iniciar Aventura</button>
+            <button id="restartButton" class="primary" style="display: none; font-size: 1.1em;">Reiniciar Partida</button>
+            <button id="leaderboardButton" class="primary" style="font-size: 1.1em;">Mejores Puntajes</button>
+            <button id="logoutButton" class="primary" style="background: #a62a2a; font-size: 1.1em;">Cerrar Sesión</button>
+        </div>
+
+        <div id="menuControls" class="controls" style="font-size: 0.9em; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: left;">
+            <h3 style="margin-top: 0; color: #ffd700; border-bottom: 1px solid #ffd700; padding-bottom: 5px;">Controles:</h3>
+            <p id="currentUserDisplay" style="font-weight: bold; color: #4CAF50; margin-bottom: 10px;"></p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+              <span>🡆 🡄 🡅 🡇 : Moverse</span>
+              <span>A : Atacar / Responder</span>
+              <span>B : Interactuar</span>
+              <span>ESC : Pausa / Menú</span>
+            </div>
+        </div>
+      </div>
     </div>
     <div id="game-container">
         <div class="background" id="background"></div>
@@ -273,6 +802,14 @@
                 <span id="wisdom-label">Sabiduría:</span>
                 <span id="wisdom-points">0</span>
             </div>
+    <!-- Nickname del jugador durante gameplay - Abre Menú de Pausa -->
+    <div id="player-nick-hud" style="display: none;" onclick="window.togglePause()">
+        <img id="hud-player-photo" src="https://cdn-icons-png.flaticon.com/512/1144/1144760.png" alt="User">
+        <div id="hud-name-container">
+            <span id="hud-player-name">Jugador</span>
+        </div>
+        <i class="menu-arrow">▼</i>
+    </div>
             <div id="eagle-life-bar" style="display: none;">
                 <img id="eagleLifeImage" src="Resources/vida_full_eagle.png" />
             </div>
@@ -310,26 +847,15 @@
         <div id="introText"></div>
         <div id="continuePrompt" style="display: none;">Presiona 'B' para continuar</div>
     </div>
-    <!-- Modal para guardar score -->
-    <div id="saveScoreModal" aria-hidden="true">
-      <form id="saveScoreForm">
-        <div id="saveScoreBox">
-          <h3>Guardar puntuación</h3>
-          <label>Usuario:</label>
-          <input id="usernameInput" type="text" required maxlength="20" />
-          <label>Nombre real:</label>
-          <input id="realnameInput" type="text" required maxlength="40" />
-          <label>Puntuación:</label>
-          <input id="scoreInput" type="number" readonly />
-          <label>Fecha:</label>
-          <input id="dateInput" type="text" readonly />
-          <div class="row">
-            <button type="submit">Guardar</button>
-            <button type="button" id="modalCancel">Cancelar</button>
-          </div>
-          <div id="saveScoreMessage"></div>
+    <!-- El modal de Leaderboard se mantiene porque es un overlay sobre el menú principal/pausa -->
+    <div id="leaderboardModal" class="summary-modal" style="display: none;">
+      <div class="summary-box" style="max-width: 600px;">
+        <h2 style="margin-bottom: 15px;">Mejores Puntajes</h2>
+        <div id="leaderboardList" class="leaderboard-container">
+          <p>Cargando puntajes...</p>
         </div>
-      </form>
+        <button id="closeLeaderboardBtn" class="primary" style="margin-top: 20px;">Volver</button>
+      </div>
     </div>
     <script src="func.js"></script>
 </body>
