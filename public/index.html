@@ -784,6 +784,8 @@
             
             <!-- Nivel 8 -->
              
+            <!-- Nivel 8 -->
+             
             <div class="platforms-scene-8" style="display: none;">
                 
                 <div class="platform moving" style="left: 600px; bottom: 150px; width: 100px; height: 20px;"></div>
@@ -798,6 +800,7 @@
                 <div class="boss" id="eagle"></div>
             <img id="feather-sprite" src="Resources/First_Boss/eagle_atk_mag.png" style="display:none">
             </div>
+
             <div class="collectible" id="runa1" style="left: 700px; bottom: 180px;"></div>
             <div class="character" id="player"></div>
             <!--Integración de Ayllu-->
@@ -806,33 +809,7 @@
             </div>
             <div class="scene-trigger" id="trigger1"></div>
             <div class="enemy" id="puma" style="display: none;"></div>
-            <div id="life-bar">
-                <img id="lifeImage" src="Resources/vida4.png" />
-            </div>
-            <!-- Contador de sabiduría -->
-            <div id="wisdom-bar">
-                <span id="wisdom-label">Sabiduría:</span>
-                <span id="wisdom-points">0</span>
-            </div>
-    <!-- Nickname del jugador durante gameplay - Abre Menú de Pausa -->
-    <div id="player-nick-hud" style="display: none;" onclick="window.togglePause()">
-        <img id="hud-player-photo" src="https://cdn-icons-png.flaticon.com/512/1144/1144760.png" alt="User">
-        <div id="hud-name-container">
-            <span id="hud-player-name">Jugador</span>
-        </div>
-        <i class="menu-arrow">▼</i>
-    </div>
-            <div id="eagle-life-bar" style="display: none;">
-                <img id="eagleLifeImage" src="Resources/vida_full_eagle.png" />
-            </div>
-            <div id="gameOverScreen" style="display: none;">
-                 <h1>Game Over</h1>
-                 <p>Has perdido todas tus vidas.</p>
-            </div>
-            <!-- Mensaje central para aciertos/errores -->
-            <div id="centerMessage" style="display: none;">
-                <p id="centerMessageText"></p>
-            </div>
+            
             <div class="blocker" style="left: 1250px; bottom: 100px;"></div>
             <!-- Cuadro de pregunta tipo quiz -->
             <div id="quiz-container" style="display: none;">
@@ -844,6 +821,37 @@
                         <li class="quiz-option">Opción 3</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+        
+        <!-- UI INTERFACE LAYER (Fixed HUD) -->
+        <div id="ui-layer">
+            <div id="life-bar">
+                <img id="lifeImage" src="Resources/vida4.png" />
+            </div>
+            <!-- Contador de sabiduría -->
+            <div id="wisdom-bar">
+                <span id="wisdom-label">Sabiduría:</span>
+                <span id="wisdom-points">0</span>
+            </div>
+            <!-- Nickname del jugador durante gameplay - Abre Menú de Pausa -->
+            <div id="player-nick-hud" style="display: none;" onclick="window.togglePause()">
+                <img id="hud-player-photo" src="https://cdn-icons-png.flaticon.com/512/1144/1144760.png" alt="User">
+                <div id="hud-name-container">
+                    <span id="hud-player-name">Jugador</span>
+                </div>
+                <i class="menu-arrow">▼</i>
+            </div>
+            <div id="eagle-life-bar" style="display: none;">
+                <img id="eagleLifeImage" src="Resources/vida_full_eagle.png" />
+            </div>
+            <div id="gameOverScreen" style="display: none;">
+                    <h1>Game Over</h1>
+                    <p>Has perdido todas tus vidas.</p>
+            </div>
+            <!-- Mensaje central para aciertos/errores -->
+            <div id="centerMessage" style="display: none;">
+                <p id="centerMessageText"></p>
             </div>
         </div>
     </div>

@@ -19,7 +19,12 @@ const gravity = 0.45;
 const groundLevel = 100;
 const stageWidth = 2000; 
 const playerWidth = 100;
-const containerWidth = window.innerWidth;
+let containerWidth = window.innerWidth;
+
+// Actualizar ancho de contenedor si cambia la ventana
+window.addEventListener('resize', () => {
+    containerWidth = window.innerWidth;
+});
 
 
 // Inicialización de sprites
@@ -190,6 +195,28 @@ function updatePositions() {
         updateCharacterPosition(puma, pumaX, pumaY);
     } else if (scene === 3) {
         updateCharacterPosition(document.getElementById('eagle'), eagleX, eagleY);
+    }
+
+    // --- Lógica de Cámara ---
+    // Calcular posición deseada de la cámara (centrada en el jugador)
+    let cameraX = playerX - (containerWidth / 2) + (playerWidth / 2);
+
+    // Limitar cámara dentro de los límites del escenario
+    // Máximo a la derecha: stageWidth - containerWidth
+    const maxCameraX = Math.max(0, stageWidth - containerWidth);
+    cameraX = Math.max(0, Math.min(cameraX, maxCameraX));
+
+    // Aplicar transformación al escenario
+    stage.style.transform = `translateX(-${cameraX}px)`;
+    
+    // Mover triggers o elementos fijos relativos al stage NO ES NECESARIO si están dentro de #stage.
+    // El fondo #background también debería moverse parallax? 
+    // Por ahora movemos solo el background ligeramente para efecto parallax si se desea, 
+    // pero el CSS tiene transition. Vamos a moverlo simple primero.
+    const bg = document.getElementById('background');
+    if (bg) {
+        // Efecto Parallax suave (0.5 de velocidad)
+        bg.style.backgroundPositionX = `-${cameraX * 0.5}px`;
     }
 }
 
