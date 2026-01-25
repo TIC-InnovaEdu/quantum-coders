@@ -17,14 +17,32 @@ let isGamePaused = false; // Control de pausa
 // Constantes del juego
 const gravity = 0.45;
 const groundLevel = 100;
-const stageWidth = 2000; 
+const stageWidth = 2000;
 const playerWidth = 100;
 let containerWidth = window.innerWidth;
 
 // Actualizar ancho de contenedor si cambia la ventana
 window.addEventListener('resize', () => {
     containerWidth = window.innerWidth;
+    // Forzar actualización inmediata de la cámara
+    updateCameraPosition();
 });
+
+// Función separada para actualizar solo la cámara (usable fuera del game loop)
+function updateCameraPosition() {
+    if (!stage) return;
+
+    let cameraX = playerX - (containerWidth / 2) + (playerWidth / 2);
+    const maxCameraX = Math.max(0, stageWidth - containerWidth);
+    cameraX = Math.max(0, Math.min(cameraX, maxCameraX));
+
+    stage.style.transform = `translateX(-${cameraX}px)`;
+
+    const bg = document.getElementById('background');
+    if (bg) {
+        bg.style.backgroundPositionX = `-${cameraX * 0.5}px`;
+    }
+}
 
 
 // Inicialización de sprites
@@ -66,51 +84,51 @@ const quizOptions = [
     "1822"
 ];
 const runaQuizzes = {
-  4: { 
-    question: "¿Quién fue el primer Inca del Tahuantinsuyo?",
-    options: ["Manco Cápac", "Atahualpa", "Rumiñahui"],
-    correct: 0,
-    narration: "Manco Cápac, según la leyenda, fue el primer Inca y fundador del Tahuantinsuyo, la gran civilización andina."
-  },
-  5: {
-    question: "¿Cuál fue la capital del Imperio Inca?",
-    options: ["Quito", "Cusco", "Cajamarca"],
-    correct: 1,
-    narration: "Cusco fue la capital del Imperio Inca, un centro político, militar y cultural de gran importancia."
-  },
-  6: {
-  question: "¿Qué líder indígena ecuatoriano resistió contra los españoles tras la muerte de Atahualpa?",
-  options: ["Huayna Cápac", "Rumiñahui", "Túpac Yupanqui"],
-  correct: 1,
-  narration: "Rumiñahui fue un líder indígena que resistió valientemente contra los conquistadores españoles tras la captura y ejecución de Atahualpa."
-  },
+    4: {
+        question: "¿Quién fue el primer Inca del Tahuantinsuyo?",
+        options: ["Manco Cápac", "Atahualpa", "Rumiñahui"],
+        correct: 0,
+        narration: "Manco Cápac, según la leyenda, fue el primer Inca y fundador del Tahuantinsuyo, la gran civilización andina."
+    },
+    5: {
+        question: "¿Cuál fue la capital del Imperio Inca?",
+        options: ["Quito", "Cusco", "Cajamarca"],
+        correct: 1,
+        narration: "Cusco fue la capital del Imperio Inca, un centro político, militar y cultural de gran importancia."
+    },
+    6: {
+        question: "¿Qué líder indígena ecuatoriano resistió contra los españoles tras la muerte de Atahualpa?",
+        options: ["Huayna Cápac", "Rumiñahui", "Túpac Yupanqui"],
+        correct: 1,
+        narration: "Rumiñahui fue un líder indígena que resistió valientemente contra los conquistadores españoles tras la captura y ejecución de Atahualpa."
+    },
 
-  7: {
-  question: "¿Qué estrategia militar clave utilizó Francisco Pizarro en la captura de Atahualpa en Cajamarca?",
-  options: [
-    "Emboscada con caballería y armas de fuego",
-    "Asedio prolongado a la ciudad",
-    "Negociación diplomática con traductores"
-  ],
-  correct: 0,
-  narration:"El 16 de noviembre de 1532, Pizarro ejecutó una audaz emboscada en Cajamarca. Ocultó sus jinetes y soldados en los edificios alrededor de la plaza, "
-  + "mientras Atahualpa ingresaba con miles de seguidores desarmados. Tras el fallido intento de negociación del fraile Vicente de Valverde, "
-  + "los españoles cargaron con caballería y dispararon arcabuces causando pánico masivo. La superioridad tecnológica como las armas de acero y caballos junto con "
-  + "el factor sorpresa permitieron capturar al Inca en minutos, un evento que marcó el colapso del Tahuantinsuyo."
-  },
-  
-  8: {
-  question: "Además del botín de oro y plata, ¿qué objetivo estratégico perseguían los españoles al conquistar el Imperio Inca?",
-  options: [
-    "Controlar las rutas de la llama",
-    "Desarticular el sistema de creencias inca",
-    "Establecer una ruta hacia el Amazonas"
-  ],
-  correct: 2,
-  narration: "Los españoles buscaban establecer rutas comerciales y de exploración hacia la región amazónica, además de obtener riquezas."
-  }
+    7: {
+        question: "¿Qué estrategia militar clave utilizó Francisco Pizarro en la captura de Atahualpa en Cajamarca?",
+        options: [
+            "Emboscada con caballería y armas de fuego",
+            "Asedio prolongado a la ciudad",
+            "Negociación diplomática con traductores"
+        ],
+        correct: 0,
+        narration: "El 16 de noviembre de 1532, Pizarro ejecutó una audaz emboscada en Cajamarca. Ocultó sus jinetes y soldados en los edificios alrededor de la plaza, "
+            + "mientras Atahualpa ingresaba con miles de seguidores desarmados. Tras el fallido intento de negociación del fraile Vicente de Valverde, "
+            + "los españoles cargaron con caballería y dispararon arcabuces causando pánico masivo. La superioridad tecnológica como las armas de acero y caballos junto con "
+            + "el factor sorpresa permitieron capturar al Inca en minutos, un evento que marcó el colapso del Tahuantinsuyo."
+    },
+
+    8: {
+        question: "Además del botín de oro y plata, ¿qué objetivo estratégico perseguían los españoles al conquistar el Imperio Inca?",
+        options: [
+            "Controlar las rutas de la llama",
+            "Desarticular el sistema de creencias inca",
+            "Establecer una ruta hacia el Amazonas"
+        ],
+        correct: 2,
+        narration: "Los españoles buscaban establecer rutas comerciales y de exploración hacia la región amazónica, además de obtener riquezas."
+    }
 };
-const correctAnswerIndex = 1; 
+const correctAnswerIndex = 1;
 const audioTracks = {
     menu: new Audio('Resources/Music/Menu_m.mp3'),
     scene1: new Audio('Resources/Music/first.mp3'),
@@ -137,8 +155,8 @@ let scene = null;
 let transitioning = false;
 let playerLives = 4;
 let playerRecentlyDamaged = false;
-let playerLastAttackTime = 0;    
-let playerAttackCooldown = 1000;  
+let playerLastAttackTime = 0;
+let playerAttackCooldown = 1000;
 let currentAudio = null;
 
 // Variables del águila
@@ -149,19 +167,19 @@ let eagleHitsLanded = 0;
 let isEagleDown = false;
 let eagleAttackCooldown = 0;
 let appleSpawnTimer = 0;
-let lastAttackType = "feather"; 
+let lastAttackType = "feather";
 const apples = [];
 let eagleVulnerable = false;
 let attackTurn = 0;
 let eagleDiveTargetX = 0;
 let eagleDiveTargetY = 0;
-let eagleDiveSpeed = 4; 
+let eagleDiveSpeed = 4;
 let eagleLives = 7;
 let eagleCanBeDamaged = false;
 let eagleLastDiveTargetY = 200;
 let eagleCooldown = false;
 let lastAttackTime = Date.now();
-let attackType = "dive"; 
+let attackType = "dive";
 let playerRecentlyHit = false;
 
 
@@ -188,7 +206,7 @@ function updateCharacterPosition(el, x, y) {
 function updatePositions() {
     updateCharacterPosition(player, playerX, playerY);
     if (scene === 1) {
-        updateCharacterPosition(ayllu,aylluX,aylluY);
+        updateCharacterPosition(ayllu, aylluX, aylluY);
         updateCharacterPosition(trigger, triggerX, triggerY);
 
     } else if (scene === 2) {
@@ -208,7 +226,7 @@ function updatePositions() {
 
     // Aplicar transformación al escenario
     stage.style.transform = `translateX(-${cameraX}px)`;
-    
+
     // Mover triggers o elementos fijos relativos al stage NO ES NECESARIO si están dentro de #stage.
     // El fondo #background también debería moverse parallax? 
     // Por ahora movemos solo el background ligeramente para efecto parallax si se desea, 
@@ -226,13 +244,13 @@ function applyGravity() {
 
     const platforms =
         scene === 3 ? document.querySelectorAll('.platforms-scene-3 .platform') :
-        scene === 2 ? document.querySelectorAll('.platforms-scene-2 .platform') :
-        scene === 4 ? document.querySelectorAll('.platforms-scene-4 .platform') :
-        scene === 5 ? document.querySelectorAll('.platforms-scene-5 .platform') :
-        scene === 6 ? document.querySelectorAll('.platforms-scene-6 .platform') :
-        scene === 7 ? document.querySelectorAll('.platforms-scene-7 .platform') :
-        scene === 8 ? document.querySelectorAll('.platforms-scene-8 .platform') :
-        document.querySelectorAll('.platforms-scene-1 .platform');
+            scene === 2 ? document.querySelectorAll('.platforms-scene-2 .platform') :
+                scene === 4 ? document.querySelectorAll('.platforms-scene-4 .platform') :
+                    scene === 5 ? document.querySelectorAll('.platforms-scene-5 .platform') :
+                        scene === 6 ? document.querySelectorAll('.platforms-scene-6 .platform') :
+                            scene === 7 ? document.querySelectorAll('.platforms-scene-7 .platform') :
+                                scene === 8 ? document.querySelectorAll('.platforms-scene-8 .platform') :
+                                    document.querySelectorAll('.platforms-scene-1 .platform');
     let landedOnPlatform = false;
 
     for (const platform of platforms) {
@@ -264,26 +282,26 @@ function applyGravity() {
     }
 }
 
-window.playSceneMusic = function(sceneKey) {
+window.playSceneMusic = function (sceneKey) {
     // Detener música actual si hay una reproduciéndose
     if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0;
     }
-    
+
     // Reproducir nueva música si existe para esta escena
     if (audioTracks[sceneKey]) {
         currentAudio = audioTracks[sceneKey];
         currentAudio.loop = true;
-        currentAudio.volume = 0.9; 
-        
+        currentAudio.volume = 0.9;
+
         const startPlayback = () => {
             currentAudio.play().catch(error => {
                 if (error.name === 'NotAllowedError') {
                     console.warn("Reproducción automática bloqueada. Esperando interacción del usuario...");
                     // Reintentar en el primer clic o tecla si fue bloqueado
                     const retry = () => {
-                        currentAudio.play().catch(() => {});
+                        currentAudio.play().catch(() => { });
                         document.removeEventListener('click', retry);
                         document.removeEventListener('keydown', retry);
                     };
@@ -300,21 +318,21 @@ window.playSceneMusic = function(sceneKey) {
 }
 
 function getCurrentPlatform() {
-  const activePlatforms = scene === 2
-    ? document.querySelectorAll('.platforms-scene-2 .platform')
-    : document.querySelectorAll('.platforms-scene-1 .platform');
-  const playerRect = player.getBoundingClientRect();
+    const activePlatforms = scene === 2
+        ? document.querySelectorAll('.platforms-scene-2 .platform')
+        : document.querySelectorAll('.platforms-scene-1 .platform');
+    const playerRect = player.getBoundingClientRect();
 
-  for (const platform of activePlatforms) {  
-    const platformRect = platform.getBoundingClientRect();
-    if (playerRect.right > platformRect.left + 5 && 
-        playerRect.left < platformRect.right - 5 &&
-        playerRect.bottom >= platformRect.top - 10 && 
-        playerRect.bottom <= platformRect.top + 5) {
-      return platform;
+    for (const platform of activePlatforms) {
+        const platformRect = platform.getBoundingClientRect();
+        if (playerRect.right > platformRect.left + 5 &&
+            playerRect.left < platformRect.right - 5 &&
+            playerRect.bottom >= platformRect.top - 10 &&
+            playerRect.bottom <= platformRect.top + 5) {
+            return platform;
+        }
     }
-  }
-  return null;
+    return null;
 }
 
 
@@ -322,16 +340,16 @@ function getCurrentPlatform() {
 function checkPlatformBlockers() {
     const blockers = document.querySelectorAll('.blocker-platform');
     const playerRect = player.getBoundingClientRect();
-    
+
     for (const blocker of blockers) {
         const blockRect = blocker.getBoundingClientRect();
-        
+
         // Solo colisionar desde abajo (para permitir saltos)
-        if (playerRect.right > blockRect.left + 5 && 
+        if (playerRect.right > blockRect.left + 5 &&
             playerRect.left < blockRect.right - 5 &&
-            playerRect.bottom >= blockRect.top - 10 && 
+            playerRect.bottom >= blockRect.top - 10 &&
             playerRect.bottom <= blockRect.top + 5) {
-            
+
             // Detener la caída
             if (velocityY < 0) {
                 velocityY = 0;
@@ -347,16 +365,16 @@ function checkPlatformBlockers() {
 function checkWallCollision() {
     const walls = document.querySelectorAll('.blocker-wall');
     const playerRect = player.getBoundingClientRect();
-    
+
     for (const wall of walls) {
         const wallRect = wall.getBoundingClientRect();
-        
+
         const collisionMargin = 5;
-        
-        if (playerRect.right > wallRect.left + collisionMargin && 
-            playerRect.left < wallRect.right - collisionMargin && 
+
+        if (playerRect.right > wallRect.left + collisionMargin &&
+            playerRect.left < wallRect.right - collisionMargin &&
             playerRect.bottom > wallRect.top + collisionMargin) {
-            
+
             // Ajustar posición del jugador
             if (keysPressed['ArrowRight']) {
                 playerX = wallRect.left - playerRect.width - 2;
@@ -370,74 +388,74 @@ function checkWallCollision() {
 }
 
 function showRunaNarration(text, onFinish) {
-  const introScene = document.getElementById("introScene");
-  const introText = document.getElementById("introText");
-  const continuePrompt = document.getElementById("continuePrompt");
+    const introScene = document.getElementById("introScene");
+    const introText = document.getElementById("introText");
+    const continuePrompt = document.getElementById("continuePrompt");
 
-  introText.textContent = text;
-  introScene.style.display = "flex";
-  continuePrompt.style.display = "block";
+    introText.textContent = text;
+    introScene.style.display = "flex";
+    continuePrompt.style.display = "block";
 
-  function handleKey(e) {
-    if (e.key.toLowerCase() === "b") {
-      introScene.style.display = "none";
-      document.removeEventListener("keydown", handleKey);
-      if (typeof onFinish === "function") onFinish();
+    function handleKey(e) {
+        if (e.key.toLowerCase() === "b") {
+            introScene.style.display = "none";
+            document.removeEventListener("keydown", handleKey);
+            if (typeof onFinish === "function") onFinish();
+        }
     }
-  }
 
-  document.addEventListener("keydown", handleKey);
+    document.addEventListener("keydown", handleKey);
 }
 
 
 function showRunaQuiz(runaId) {
-  const quiz = runaQuizzes[runaId];
-  if (!quiz) return; 
+    const quiz = runaQuizzes[runaId];
+    if (!quiz) return;
 
-  const container = document.getElementById("runa-quiz-container");
-  const questionElem = document.getElementById("runa-quiz-question");
-  const optionsElem = document.getElementById("runa-quiz-options");
+    const container = document.getElementById("runa-quiz-container");
+    const questionElem = document.getElementById("runa-quiz-question");
+    const optionsElem = document.getElementById("runa-quiz-options");
 
-  optionsElem.innerHTML = "";
-  questionElem.textContent = quiz.question;
+    optionsElem.innerHTML = "";
+    questionElem.textContent = quiz.question;
 
-  quiz.options.forEach((opt, idx) => {
-    const li = document.createElement("li");
-    li.textContent = opt;
-    li.classList.add("runa-option");
-    li.onclick = () => {
-      container.style.display = "none";
-      let message = "";
+    quiz.options.forEach((opt, idx) => {
+        const li = document.createElement("li");
+        li.textContent = opt;
+        li.classList.add("runa-option");
+        li.onclick = () => {
+            container.style.display = "none";
+            let message = "";
 
-      if (idx === quiz.correct) {
-        wisdomPoints += 10;
-        updateWisdomBar();
-        message = "¡Correcto! +10 Sabiduría";
-      } else {
-        message = "Respuesta incorrecta...";
-      }
+            if (idx === quiz.correct) {
+                wisdomPoints += 10;
+                updateWisdomBar();
+                message = "¡Correcto! +10 Sabiduría";
+            } else {
+                message = "Respuesta incorrecta...";
+            }
 
-      showCenterMessage(message, 2000);
+            showCenterMessage(message, 2000);
 
-      // mostrar narración obligatoria antes de cambiar escena
-        setTimeout(() => {
-            showRunaNarration(
-                quiz.narration || "Un fragmento de sabiduría ancestral se revela...",
-                () => {
-                    if (scene === 8) {
-                        showFinalThanksAndReturnToMenu();
-                    } else {
-                        const nextSceneFn = window[`startScene${scene + 1}`];
-                        if (typeof nextSceneFn === "function") nextSceneFn();
+            // mostrar narración obligatoria antes de cambiar escena
+            setTimeout(() => {
+                showRunaNarration(
+                    quiz.narration || "Un fragmento de sabiduría ancestral se revela...",
+                    () => {
+                        if (scene === 8) {
+                            showFinalThanksAndReturnToMenu();
+                        } else {
+                            const nextSceneFn = window[`startScene${scene + 1}`];
+                            if (typeof nextSceneFn === "function") nextSceneFn();
+                        }
                     }
-                }
-            );
-        }, 2200);
-    };
-    optionsElem.appendChild(li);
-  });
+                );
+            }, 2200);
+        };
+        optionsElem.appendChild(li);
+    });
 
-  container.style.display = "flex";
+    container.style.display = "flex";
 }
 
 
@@ -505,7 +523,7 @@ function checkFeatherCollision() {
     for (let i = feathers.length - 1; i >= 0; i--) {
         const feather = feathers[i];
         const featherRect = feather.element.getBoundingClientRect();
-        if (playerRect.right > featherRect.left && 
+        if (playerRect.right > featherRect.left &&
             playerRect.left < featherRect.right &&
             playerRect.bottom > featherRect.top &&
             playerRect.top < featherRect.bottom) {
@@ -521,9 +539,9 @@ function checkNPCInteraction() {
     const npcRect = ayllu.getBoundingClientRect();
 
     const near = !(playerRect.right < npcRect.left - 20 ||
-                   playerRect.left > npcRect.right + 20 ||
-                   playerRect.bottom < npcRect.top - 20 ||
-                   playerRect.top > npcRect.bottom + 20);
+        playerRect.left > npcRect.right + 20 ||
+        playerRect.bottom < npcRect.top - 20 ||
+        playerRect.top > npcRect.bottom + 20);
 
     if (near && keysPressed['b'] && !talkedToNPC) {
         showQuiz();
@@ -548,7 +566,7 @@ function showCenterMessage(text, duration = 2000) {
 function updateLifeBar() {
     const lifeImage = document.getElementById('lifeImage');
     const lifeContainer = document.getElementById('life-bar');
-    
+
     // Crear contenedor si no existe
     if (!lifeContainer) {
         const newLifeContainer = document.createElement('div');
@@ -558,14 +576,14 @@ function updateLifeBar() {
         newLifeContainer.style.left = '10px';
         newLifeContainer.style.zIndex = '100';
         document.body.appendChild(newLifeContainer);
-        
+
         const img = document.createElement('img');
         img.id = 'lifeImage';
         newLifeContainer.appendChild(img);
     } else {
         lifeContainer.style.display = 'block';
     }
-    
+
     // Actualizar imagen según vidas
     if (playerLives >= 4) {
         lifeImage.src = 'Resources/vida4.png';
@@ -611,7 +629,7 @@ function updateEagleLifeBar() {
     }
     if (eagleLives <= 0) {
         eagle.style.display = "none";
-        document.getElementById('eagle-life-bar').style.display = "none"; 
+        document.getElementById('eagle-life-bar').style.display = "none";
         showDialogue("¡Has derrotado al Águila!");
     }
 }
@@ -676,23 +694,23 @@ function showGameOver() {
     // --- Preparar datos para el Resumen y Auto-guardado ---
     const finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
     const finalGameData = {
-      score: finalScore,
-      wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
-      levelReached: (typeof scene !== 'undefined') ? scene : null,
-      runasCollected: typeof runasCollected !== 'undefined' ? runasCollected : 0,
-      enemiesDefeated: typeof enemiesDefeated !== 'undefined' ? enemiesDefeated : 0,
-      playerWon: false
+        score: finalScore,
+        wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
+        levelReached: (typeof scene !== 'undefined') ? scene : null,
+        runasCollected: typeof runasCollected !== 'undefined' ? runasCollected : 0,
+        enemiesDefeated: typeof enemiesDefeated !== 'undefined' ? enemiesDefeated : 0,
+        playerWon: false
     };
 
     // Mostrar resumen y guardar automáticamente
     if (typeof window.showGameSummary === 'function') {
-      setTimeout(() => {
-        window.showGameSummary(finalGameData);
-      }, 1500); // Dar un poco de tiempo para ver el mensaje de Game Over
+        setTimeout(() => {
+            window.showGameSummary(finalGameData);
+        }, 1500); // Dar un poco de tiempo para ver el mensaje de Game Over
     } else {
-      setTimeout(() => {
-        window.showMenu();
-      }, 1500);
+        setTimeout(() => {
+            window.showMenu();
+        }, 1500);
     }
 }
 
@@ -719,7 +737,7 @@ function resetGameState() {
     eagleLives = 7;
     eagleState = "idle";
     currentPhase = 1;
-    
+
     // Limpiar UI
     document.getElementById('gameOverScreen').style.display = 'none';
     document.getElementById('overlay').style.background = "transparent";
@@ -727,7 +745,7 @@ function resetGameState() {
     document.getElementById('restartButton').style.display = 'none';
     document.getElementById('gameTitle').textContent = "RUNA PACHAWAN";
     document.getElementById('playButton').textContent = "Iniciar Aventura";
-    
+
     // Limpiar proyectiles y enemigos
     feathers.forEach(f => f.element.remove());
     feathers.length = 0;
@@ -735,35 +753,35 @@ function resetGameState() {
     apples.length = 0;
     projectiles.forEach(p => p.element.remove());
     projectiles.length = 0;
-    
+
     // Resetear HUD
     updateLifeBar();
     updateWisdomBar();
-    
+
     // Resetear fondo a la escena inicial
     const bg = document.getElementById('background');
     if (bg) bg.style.backgroundImage = "url('Resources/Backgrounds/BackGround1.png')";
-    
+
     // Ocultar todas las escenas y mostrar solo la 1
     document.querySelectorAll('[class^="platforms-scene-"]').forEach(el => el.style.display = 'none');
     const scene1El = document.querySelector('.platforms-scene-1');
     if (scene1El) scene1El.style.display = 'block';
-    
+
     // Mostrar NPC y trigger de la escena 1
     if (ayllu) ayllu.style.display = 'block';
     if (trigger) trigger.style.display = 'block';
-    
+
     // Mostrar todas las runas
     document.querySelectorAll('.collectible').forEach(el => el.style.display = 'block');
-    
+
     // Ocultar enemigos de escenas
     if (document.getElementById('puma')) document.getElementById('puma').style.display = 'none';
     if (document.getElementById('eagleBoss')) document.getElementById('eagleBoss').style.display = 'none';
-    
+
     // Ocultar jugador y HUD inicialmente (se mostrarán al pulsar "Play")
     const playerEl = document.getElementById('player');
     if (playerEl) playerEl.style.display = 'none';
-    
+
     const hudElements = ['life-bar', 'wisdom-bar', 'player-nick-hud', 'overlay'];
     hudElements.forEach(id => {
         const el = document.getElementById(id);
@@ -784,7 +802,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const confirmRestart = confirm("¿Estás seguro de que quieres reiniciar la partida? Perderás todo tu progreso actual.");
                 if (!confirmRestart) return;
             }
-            
+
             resetGameState();
             // Iniciar el flujo de juego normal
             document.getElementById('playButton').click();
@@ -794,11 +812,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function isOnPlatform() {
     const platforms = scene === 3
-    ? document.querySelectorAll('.platforms-scene-3 .platform')
-    : scene === 2
-    ? document.querySelectorAll('.platforms-scene-2 .platform')
-    : document.querySelectorAll('.platforms-scene-1 .platform');
-    
+        ? document.querySelectorAll('.platforms-scene-3 .platform')
+        : scene === 2
+            ? document.querySelectorAll('.platforms-scene-2 .platform')
+            : document.querySelectorAll('.platforms-scene-1 .platform');
+
     for (const platform of platforms) {
         const platformY = parseInt(platform.style.bottom);
         const platformX = parseInt(platform.style.left);
@@ -819,7 +837,7 @@ function movePlayer() {
     const speed = 5;
     let moving = false;
     const prevX = playerX;
-    
+
     if (keysPressed['ArrowLeft']) {
         playerX -= speed;
         player.style.transform = "scaleX(1)";
@@ -848,8 +866,8 @@ function movePlayer() {
 
     if (!isAttacking) {
         if (isJumping) {
-            player.style.backgroundImage = velocityY > 0 
-                ? "url('Resources/Player/Player_Jump.png')" 
+            player.style.backgroundImage = velocityY > 0
+                ? "url('Resources/Player/Player_Jump.png')"
                 : "url('Resources/Player/Player_Fall.png')";
         } else if (moving) {
             player.style.backgroundImage = "url('Resources/Player/Player_Run.png')";
@@ -900,7 +918,7 @@ function movePuma() {
             top: wallRect.top,
             bottom: pumaRect.bottom
         };
-        if (nextRect.right > wallRect.left + 5 && 
+        if (nextRect.right > wallRect.left + 5 &&
             nextRect.left < wallRect.right - 5 &&
             nextRect.bottom > wallRect.top + 5) {
             willCollide = true;
@@ -921,7 +939,7 @@ function movePuma() {
 
     // Ataque si está cerca
     const playerRect = player.getBoundingClientRect();
-    if (Math.abs(playerRect.left - pumaRect.left) < 150 && 
+    if (Math.abs(playerRect.left - pumaRect.left) < 150 &&
         Math.abs(playerRect.bottom - pumaRect.bottom) < 50) {
         isPumaAttacking = true;
         puma.style.backgroundImage = "url('Resources/Mobs/panther_atk.png')";
@@ -1001,16 +1019,16 @@ function moveEagleBoss() {
     // Verificar si el águila ha sido derrotada
     if (eagleLives <= 0 && scene === 3) {
         if (!eagleDefeated) { // solo ocurre una vez
-        eagleDefeated = true;
-        eagle.style.display = 'none';
-        document.getElementById('eagle-life-bar').style.display = 'none';
-        showDialogue("¡Has derrotado al Águila!");
-        setTimeout(() => {
-            hideDialogue();
-            startScene4();
-        }, 3500);
-    }
-    return;
+            eagleDefeated = true;
+            eagle.style.display = 'none';
+            document.getElementById('eagle-life-bar').style.display = 'none';
+            showDialogue("¡Has derrotado al Águila!");
+            setTimeout(() => {
+                hideDialogue();
+                startScene4();
+            }, 3500);
+        }
+        return;
     }
 
     if (!eagle || eagleLives <= 0) return;
@@ -1136,7 +1154,7 @@ function resetEagle() {
     isEagleDown = false;
     eagleY = 200;
     eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
-    
+
     // Cambiar fase si se completaron los golpes
     if (eagleHitsLanded >= 3) {
         currentPhase = Math.min(3, currentPhase + 1);
@@ -1152,9 +1170,9 @@ function checkEagleHit() {
     const eagleRect = eagle.getBoundingClientRect();
 
     const overlap = !(playerRect.right < eagleRect.left ||
-                      playerRect.left > eagleRect.right ||
-                      playerRect.bottom < eagleRect.top ||
-                      playerRect.top > eagleRect.bottom);
+        playerRect.left > eagleRect.right ||
+        playerRect.bottom < eagleRect.top ||
+        playerRect.top > eagleRect.bottom);
 
     if (overlap) {
         eagleCooldown = true;
@@ -1165,7 +1183,7 @@ function checkEagleHit() {
         setTimeout(() => {
             eagle.classList.remove("eagle-damage");
             eagleCooldown = false;
-        }, 500); 
+        }, 500);
 
         if (eagleLives <= 0) {
             eagle.style.display = "none";
@@ -1181,15 +1199,15 @@ function checkEagleHit() {
 function spawnApple() {
     const appleImagePath = 'Resources/Items/apple.png';
     console.log("Intentando cargar manzana desde:", appleImagePath);
-    
+
     const apple = document.createElement('div');
     apple.className = 'health-item';
     apple.style.backgroundImage = `url('${appleImagePath}')`;
-    
+
     // Posición más accesible
     const x = 200 + Math.random() * (stageWidth - 400);
     const y = groundLevel + 50;
-    
+
     apple.style.left = `${x}px`;
     apple.style.bottom = `${y}px`;
     apple.style.width = '60px';
@@ -1197,9 +1215,9 @@ function spawnApple() {
     apple.style.position = 'absolute';
     apple.style.backgroundSize = 'contain';
     apple.style.backgroundRepeat = 'no-repeat';
-    
+
     document.getElementById('stage').appendChild(apple);
-    
+
     apples.push({
         element: apple,
         x: x,
@@ -1211,27 +1229,27 @@ function spawnApple() {
 
 function checkAppleCollection() {
     const playerRect = player.getBoundingClientRect();
-    
+
     for (let i = apples.length - 1; i >= 0; i--) {
         if (apples[i].collected) continue;
-        
+
         const appleRect = apples[i].element.getBoundingClientRect();
-        
-        if (playerRect.right > appleRect.left + 20 && 
+
+        if (playerRect.right > appleRect.left + 20 &&
             playerRect.left < appleRect.right - 20 &&
             playerRect.bottom > appleRect.top + 20 &&
             playerRect.top < appleRect.bottom - 20) {
-            
+
             playerLives = Math.min(4, playerLives + 2);
             updateLifeBar();
             console.log(`Manzana recolectada! Vidas: ${playerLives}`);
-            
+
             apples[i].element.style.transform = "scale(1.5)";
             apples[i].element.style.opacity = "0";
             setTimeout(() => {
                 apples[i].element.remove();
             }, 300);
-            
+
             apples[i].collected = true;
             apples.splice(i, 1);
         }
@@ -1240,7 +1258,7 @@ function checkAppleCollection() {
 
 
 function handlePlayerAttack() {
-    const now = performance.now(); 
+    const now = performance.now();
     //respeta cooldown
     if (now - playerLastAttackTime < playerAttackCooldown) return;
     isAttacking = true;
@@ -1253,8 +1271,8 @@ function handlePlayerAttack() {
         isAttacking = false;
 
         if (isJumping) {
-            player.style.backgroundImage = velocityY > 0 
-                ? "url('Resources/Player/Player_Jump.png')" 
+            player.style.backgroundImage = velocityY > 0
+                ? "url('Resources/Player/Player_Jump.png')"
                 : "url('Resources/Player/Player_Fall.png')";
         } else if (keysPressed['ArrowLeft'] || keysPressed['ArrowRight']) {
             player.style.backgroundImage = "url('Resources/Player/Player_Run.png')";
@@ -1274,11 +1292,11 @@ function checkPlayerAttackHitsEnemy() {
 
     // Definir el rango de ataque basado en la dirección del jugador
     const attackRange = {
-        left: player.style.transform === "scaleX(1)" 
-            ? playerRect.left - 30 
+        left: player.style.transform === "scaleX(1)"
+            ? playerRect.left - 30
             : playerRect.right - 80,
-        right: player.style.transform === "scaleX(1)" 
-            ? playerRect.left + 50 
+        right: player.style.transform === "scaleX(1)"
+            ? playerRect.left + 50
             : playerRect.right + 30
     };
 
@@ -1314,7 +1332,7 @@ function checkPlayerAttackHitsEnemy() {
                 showDialogue("¡Prepárate para el combate final!");
                 setTimeout(() => {
                     hideDialogue();
-                    startScene3(); 
+                    startScene3();
                 }, 3000);
             }, 2000);
         } else {
@@ -1341,7 +1359,7 @@ function checkQuicksandCollision() {
 
     // Solo aplicar daño si el jugador tiene vidas
     if (overlap && playerLives > 0) {
-        playerLives = 0; 
+        playerLives = 0;
         updateLifeBar();
     }
 }
@@ -1357,35 +1375,35 @@ function checkTriggerCollision() {
 }
 
 function spawnProjectile(enemy) {
-  const stageEl = document.getElementById("stage");        
-  if (!stageEl) return;                                  
+    const stageEl = document.getElementById("stage");
+    if (!stageEl) return;
 
-  const enemyRect = enemy.getBoundingClientRect();
-  const stageRect = stageEl.getBoundingClientRect();
+    const enemyRect = enemy.getBoundingClientRect();
+    const stageRect = stageEl.getBoundingClientRect();
 
-  // Coordenadas relativas al stage
-  const projectileX = enemyRect.left - stageRect.left + enemyRect.width / 2;
-  const projectileY = enemyRect.bottom - stageRect.top; // <-- usar bottom en vez de top
+    // Coordenadas relativas al stage
+    const projectileX = enemyRect.left - stageRect.left + enemyRect.width / 2;
+    const projectileY = enemyRect.bottom - stageRect.top; // <-- usar bottom en vez de top
 
-  const proj = document.createElement("div");
-  proj.classList.add("projectile");
-  proj.style.position = "absolute";                         
-  proj.style.left = projectileX + "px";
-  proj.style.bottom  = projectileY + "px"; // <-- bottom, no top
-  stageEl.appendChild(proj);
+    const proj = document.createElement("div");
+    proj.classList.add("projectile");
+    proj.style.position = "absolute";
+    proj.style.left = projectileX + "px";
+    proj.style.bottom = projectileY + "px"; // <-- bottom, no top
+    stageEl.appendChild(proj);
 
-  // Disparar hacia el jugador
-  const playerCenterX = playerX + playerWidth / 2;
-  const dir = playerCenterX < projectileX ? -6 : 6;
+    // Disparar hacia el jugador
+    const playerCenterX = playerX + playerWidth / 2;
+    const dir = playerCenterX < projectileX ? -6 : 6;
 
-  projectiles.push({ element: proj, x: projectileX, y: projectileY, speed: dir });
+    projectiles.push({ element: proj, x: projectileX, y: projectileY, speed: dir });
 }
 
 
 function updateProjectiles() {
     for (let i = projectiles.length - 1; i >= 0; i--) {
         let proj = projectiles[i];
-        proj.x += proj.speed; 
+        proj.x += proj.speed;
         proj.element.style.left = proj.x + "px";
 
         // Colisión con jugador
@@ -1420,9 +1438,9 @@ function updateSpanishEnemies() {
         const playerCenterX = playerX + playerWidth / 2;
 
         if (playerCenterX > enemyCenterX) {
-            enemy.classList.add("flipped");   
+            enemy.classList.add("flipped");
         } else {
-            enemy.classList.remove("flipped"); 
+            enemy.classList.remove("flipped");
         }
 
         let state = enemy.dataset.state;
@@ -1480,7 +1498,7 @@ function checkSpanishCollision() {
             if (playerRect.bottom > enemyRect.top && velocityY <= 0) {
                 // Ajuste: solo poner al jugador justo encima del enemigo, no mandarlo al cielo
                 playerY = parseInt(enemy.style.bottom) + enemy.offsetHeight;
-                velocityY = 0; 
+                velocityY = 0;
                 isJumping = false;
             }
 
@@ -1495,7 +1513,7 @@ function startIntroScene() {
     const continuePrompt = document.getElementById('continuePrompt');
 
     if (writingInterval) clearInterval(writingInterval);
-    introDiv.innerHTML = ""; 
+    introDiv.innerHTML = "";
     continuePrompt.style.display = 'none';
     currentChar = 0;
 
@@ -1524,7 +1542,7 @@ function startScene2() {
     // Mostrar elementos escena 2
     document.querySelector('.platforms-scene-2').style.display = 'block';
     puma.style.display = 'block';
-    
+
     // Ocultar elementos de otras escenas
     document.querySelector('.platforms-scene-1').style.display = 'none';
     ayllu.style.display = 'none';
@@ -1538,7 +1556,7 @@ function startScene2() {
     pumaX = 900;
     pumaY = groundLevel;
     pumaDirection = 1;
-    
+
     // Estado inicial mirando a la derecha
     puma.classList.remove('puma-facing-left', 'puma-facing-right');
     puma.classList.add('puma-facing-right');
@@ -1554,7 +1572,7 @@ function startScene3() {
     transitioning = false;
 
     // Resetear estado completo del águila
-    eagleLives = 7; 
+    eagleLives = 7;
     eagleDefeated = false;
     eagleHitsLanded = 0;
     isEagleDown = false;
@@ -1573,7 +1591,7 @@ function startScene3() {
     eagle.style.backgroundImage = "url('Resources/First_Boss/eagle_idle.png')";
     updateCharacterPosition(eagle, eagleX, eagleY);
 
-   
+
     document.querySelector('.platforms-scene-2').style.display = 'none';
     puma.style.display = 'none';
 
@@ -1673,7 +1691,7 @@ function startScene6() {
     spanishEnemies = Array.from(document.querySelectorAll(`.platforms-scene-${scene} .spanish-enemy`));
     spanishEnemies.forEach(enemy => {
         enemy.dataset.state = "recharge";
-        enemy.dataset.timer = 120; 
+        enemy.dataset.timer = 120;
         enemy.style.backgroundImage = "url('Resources/Mobs/conquest_recharge.png')";
     });
     projectiles = [];
@@ -1761,20 +1779,20 @@ function gameLoop() {
         moveEagleBoss();
         checkEagleHit();
         checkAppleCollection();
-        checkFeatherCollision(); 
+        checkFeatherCollision();
         if (appleSpawnTimer <= 0 && apples.length < 2) {
             if (Math.random() < 0.1) spawnApple();
             appleSpawnTimer = 100;
         } else {
             appleSpawnTimer--;
         }
-    } else if (scene >= 4) {  
+    } else if (scene >= 4) {
         checkQuicksandCollision();
         checkRunaCollection();
         if (scene === 6 || scene === 7) {
-            updateSpanishEnemies(); 
-            updateProjectiles();    
-            checkSpanishCollision();  
+            updateSpanishEnemies();
+            updateProjectiles();
+            checkSpanishCollision();
         }
     }
 
@@ -1809,27 +1827,27 @@ function hideDialogue() {
 
 function showFinalThanksAndReturnToMenu() {
     const finalText = "¡Muchas gracias por jugar! Esperamos que haya servido para aprender parte de la historia del Ecuador.";
-    
+
     showRunaNarration(finalText, () => {
         setTimeout(() => {
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
             }
-            
+
             document.querySelectorAll('.platforms-scene-8, #player, #background, #floor, #life-bar, #wisdom-bar, #player-nick-hud').forEach(el => {
                 el.style.display = 'none';
             });
-            
+
             // --- Preparar datos para el Resumen de Victoria ---
             const finalScore = (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0;
             const finalGameData = {
-              score: finalScore,
-              wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
-              levelReached: 8,
-              runasCollected: typeof runasCollected !== 'undefined' ? runasCollected : 0,
-              enemiesDefeated: typeof enemiesDefeated !== 'undefined' ? enemiesDefeated : 0,
-              playerWon: true
+                score: finalScore,
+                wisdomPoints: (typeof wisdomPoints !== 'undefined') ? wisdomPoints : 0,
+                levelReached: 8,
+                runasCollected: typeof runasCollected !== 'undefined' ? runasCollected : 0,
+                enemiesDefeated: typeof enemiesDefeated !== 'undefined' ? enemiesDefeated : 0,
+                playerWon: true
             };
 
             if (typeof window.showGameSummary === 'function') {
@@ -1837,7 +1855,7 @@ function showFinalThanksAndReturnToMenu() {
             } else {
                 window.showMenu();
             }
-        }, 2000); 
+        }, 2000);
     });
 }
 
@@ -1911,7 +1929,7 @@ function checkQuizAnswer() {
             document.getElementById("quiz-container").style.display = "none";
             quizActive = false;
             startScene2();
-        } 
+        }
         else {
             wisdomPoints += 10;
             updateWisdomBar();
@@ -1922,8 +1940,8 @@ function checkQuizAnswer() {
     } else {
         if (scene === 1 && !talkedToNPC) {
             showCenterMessage("Respuesta incorrecta...", 2500);
-            window.close(); 
-        } 
+            window.close();
+        }
         else {
             showCenterMessage("Respuesta incorrecta...", 2500);
             document.getElementById("quiz-container").style.display = "none";
@@ -1939,7 +1957,7 @@ document.getElementById("playButton").addEventListener("click", () => {
         if (typeof window.showAuth === "function") window.showAuth();
         return;
     }
-    
+
     // Si el juego está pausado, simplemente despausamos
     if (isGamePaused) {
         window.togglePause();
@@ -1958,22 +1976,22 @@ document.getElementById("playButton").addEventListener("click", () => {
     }
 
     document.getElementById("menu").style.display = "none";
-    
+
     // Asegurar que el contenedor del juego y el jugador sean visibles
     const gameContainer = document.getElementById("game-container");
     if (gameContainer) gameContainer.style.display = "block";
-    
+
     const player = document.getElementById("player");
     if (player) player.style.display = "block";
 
     playSceneMusic('scene1');
     document.getElementById("introScene").style.display = "flex";
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/fa_floor.png')";
-    scene = 0;  
-    startIntroScene(); 
+    scene = 0;
+    startIntroScene();
     updateLifeBar();
     updateWisdomBar();
-    
+
     // Solo iniciar el loop si no está ya corriendo
     if (!gameLoopRunning) {
         gameLoop();
@@ -2002,28 +2020,28 @@ if (exitBtn) {
 
 const logoutBtn = document.getElementById("logoutButton");
 if (logoutBtn) {
-  logoutBtn.addEventListener("click", () => {
-    // Detener música y limpiar estado
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-    }
-    
-    // Ocultar elementos del juego si estaban visibles
-    document.getElementById('game-container').style.display = 'none';
-    document.getElementById('introScene').style.display = 'none';
-    
-    // Reiniciar estado
-    if (typeof resetGameState === 'function') {
-      resetGameState();
-    }
+    logoutBtn.addEventListener("click", () => {
+        // Detener música y limpiar estado
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+        }
 
-    if (typeof window.authSignOut === "function") {
-      window.authSignOut();
-    } else {
-      location.reload();
-    }
-  });
+        // Ocultar elementos del juego si estaban visibles
+        document.getElementById('game-container').style.display = 'none';
+        document.getElementById('introScene').style.display = 'none';
+
+        // Reiniciar estado
+        if (typeof resetGameState === 'function') {
+            resetGameState();
+        }
+
+        if (typeof window.authSignOut === "function") {
+            window.authSignOut();
+        } else {
+            location.reload();
+        }
+    });
 }
 
 const leaderboardBtn = document.getElementById("leaderboardButton");
@@ -2036,17 +2054,17 @@ if (leaderboardBtn) {
 }
 
 // window.togglePause function definition
-window.togglePause = function() {
+window.togglePause = function () {
     const menu = document.getElementById('menu');
     const menuVisible = menu.style.display !== 'none';
     const authVisible = document.getElementById('authScreen').style.display !== 'none';
     const introVisible = document.getElementById('introScene').style.display !== 'none';
-    
+
     // Solo pausar si estamos en gameplay real (no en menús iniciales)
     if (authVisible || introVisible || gameOverActive) return;
 
     isGamePaused = !isGamePaused;
-    
+
     if (isGamePaused) {
         if (menu) {
             menu.style.display = 'flex';
@@ -2054,7 +2072,7 @@ window.togglePause = function() {
             document.getElementById('restartButton').style.display = 'block';
             document.getElementById('menuStats').style.display = 'none';
             document.getElementById('gameTitle').textContent = "PAUSA";
-            
+
             // Ocultar avisos de Ayllu y Quizzes
             const aylluWarning = document.getElementById('ayllu-warning');
             if (aylluWarning) aylluWarning.style.display = 'none';
@@ -2085,11 +2103,11 @@ document.addEventListener('keydown', (e) => {
 
     if (scene === 0 && e.key.toLowerCase() === 'b') {
         document.getElementById('introScene').style.display = 'none';
-        
+
         // Asegurar visibilidad de los elementos del juego
         const gameContainer = document.getElementById('game-container');
         if (gameContainer) gameContainer.style.display = 'block';
-        
+
         const playerEl = document.getElementById('player');
         if (playerEl) playerEl.style.display = 'block';
 
