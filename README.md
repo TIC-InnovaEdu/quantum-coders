@@ -19,9 +19,11 @@ Runa Pachawan es una experiencia lúdica diseñada para resaltar y preservar ele
 
 ## 📁 Estructura del Proyecto
 - `public/`: Núcleo de la aplicación.
-  - `index.html`: Punto de entrada principal y lógica de autenticación.
+  - `index.html`: Punto de entrada principal de la aplicación.
+  - `auth.js`: Módulo de autenticación y lógica de Firebase.
   - `func.js`: Lógica del juego, físicas, enemigos e interacciones.
-  - `estilos.css`: Diseño visual y adaptabilidad.
+  - `interface.css`: Estilos del HUD, modales y diseño responsivo.
+  - `estilos.css`: Estilos base del motor de juego.
   - `Resources/`: Activos multimedia (imágenes, sprites, música y efectos de sonido).
 - `firestore.rules`: Configuración de seguridad para el acceso a la base de datos.
 - `firebase.json`: Configuración de despliegue y reglas de hosting.
