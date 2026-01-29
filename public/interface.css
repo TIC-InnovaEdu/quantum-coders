@@ -1,0 +1,200 @@
+/* 
+ * UI Interface Styles
+ * Contiene los estilos del HUD, Modales, Tablas de Clasificación y Responsividad.
+ */
+
+/* ---------- HUD: Nickname del Jugador ---------- */
+#player-nick-hud {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 8px 20px;
+  border-radius: 40px;
+  border: 2px solid #ffd700;
+  z-index: 2100;
+  color: white;
+  font-family: 'Cinzel', serif;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 150px;
+  max-width: 90vw;
+}
+
+#player-nick-hud:hover {
+  background: rgba(44, 30, 15, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(255, 215, 0, 0.2);
+}
+
+#hud-player-photo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  margin-right: 12px;
+  border: 2px solid #ffd700;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: #2c1e0f;
+}
+
+#hud-name-container {
+  flex-grow: 1;
+  overflow: hidden;
+  margin-right: 12px;
+}
+
+#hud-player-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  text-shadow: 1px 1px 2px black;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.menu-arrow {
+  font-size: 0.7em;
+  color: #ffd700;
+  transition: transform 0.3s;
+}
+
+/* ---------- Resumen de Partida (Modal) ---------- */
+.summary-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  backdrop-filter: blur(8px);
+}
+
+.summary-box {
+  background: linear-gradient(145deg, #2c1e0f, #4a3416);
+  border: 3px solid #ffd700;
+  border-radius: 20px;
+  padding: 40px;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+@media (max-width: 600px) {
+  .summary-box {
+    padding: 15px;
+    max-width: 95%;
+    border-radius: 15px;
+  }
+  .summary-box h1 { font-size: 1.5em; }
+  .summary-box h2 { font-size: 1.2em; }
+  .menu-options button { font-size: 1em !important; padding: 10px !important; }
+  #menuControls { padding: 10px !important; font-size: 0.8em !important; }
+  #menuControls div { grid-template-columns: 1fr !important; }
+}
+
+.summary-box h2 {
+  color: #ffd700;
+  font-size: 2em;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px black;
+}
+
+.summary-stats {
+  margin-bottom: 30px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+  padding-bottom: 5px;
+}
+
+.stat-label { color: #ddd; }
+.stat-value { color: #ffd700; font-weight: bold; }
+
+.auto-save-status {
+  margin-top: 20px;
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* ---------- Leaderboard Table ---------- */
+.leaderboard-container {
+  max-height: 350px;
+  overflow-y: auto;
+  margin: 10px 0;
+  padding-right: 5px;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+  font-size: 1.1em;
+}
+
+.leaderboard-table th {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  padding: 12px;
+  position: sticky;
+  top: 0;
+  border-bottom: 2px solid #ffd700;
+}
+
+.leaderboard-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-table tr:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.leaderboard-container::-webkit-scrollbar { width: 8px; }
+.leaderboard-container::-webkit-scrollbar-thumb {
+  background: #ffd700;
+  border-radius: 4px;
+}
+
+/* ---------- Advertencia de Resolución ---------- */
+#resolution-warning {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  color: #fff;
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+#resolution-warning h2 { color: #ffd700; margin-bottom: 20px; }
+#resolution-warning p { font-size: 1.2em; max-width: 80%; }
+
+@media screen and (max-width: 600px), screen and (max-height: 400px) {
+  #resolution-warning { display: flex !important; }
+  #game-container, #ui-layer { display: none !important; }
+}
