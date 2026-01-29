@@ -11,7 +11,7 @@ let eagleDiveHasHit = false;
 let hasShield = false;
 let eagleDefeated = false;
 let gameOverActive = false; // Bloqueo de juego tras Game Over
-let isGamePaused = false; // Control de pausa
+window.isGamePaused = false; // Control de pausa global
 
 
 // Constantes del juego
