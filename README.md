@@ -1,6 +1,12 @@
 # Runa Pachawan - Proyecto de Prácticas de Servicio Comunitario
 
+[![Play Online](https://img.shields.io/badge/Play-Online-brightgreen?style=for-the-badge&logo=github)](https://tic-innovaedu.github.io/quantum-coders/)
+
 Este proyecto es una aplicación web interactiva basada en la cultura andina, desarrollada como parte de las **Prácticas de Servicio Comunitario - Grupo 1** de la Universidad Politécnica Salesiana (UPS).
+
+## 🎮 Juega Ahora
+Puedes acceder al juego directamente desde tu navegador aquí:
+👉 **[https://tic-innovaedu.github.io/quantum-coders/](https://tic-innovaedu.github.io/quantum-coders/)**
 
 ## 👥 Integrantes del Equipo
 - **Rodrigo Damián Orlando**
