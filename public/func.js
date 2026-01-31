@@ -46,8 +46,8 @@ function updateCameraPosition() {
 
 
 // Inicialización de sprites
-player.style.backgroundImage = "url('Resources/Player/Player_idle.png')";
-ayllu.style.backgroundImage = "url('Resources/Totems/Ayllu_Idle.png')";
+player.style.backgroundImage = "url('Resources/Player/Player_Idle.png')";
+ayllu.style.backgroundImage = "url('Resources/Totems/Ayllu_idle.png')";
 puma.style.backgroundImage = "url('Resources/Mobs/panther_idle.png')";
 
 // Variables del juego
@@ -760,7 +760,7 @@ function resetGameState() {
 
     // Resetear fondo a la escena inicial
     const bg = document.getElementById('background');
-    if (bg) bg.style.backgroundImage = "url('Resources/Backgrounds/BackGround1.png')";
+    if (bg) bg.style.backgroundImage = "url('Resources/Backgrounds/Background1.png')";
 
     // Ocultar todas las escenas y mostrar solo la 1
     document.querySelectorAll('[class^="platforms-scene-"]').forEach(el => el.style.display = 'none');
@@ -1600,7 +1600,7 @@ function startScene3() {
     updateCharacterPosition(player, playerX, playerY);
 
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/castle_floor.png')";
-    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/BackGround2.png')";
+    document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background2.png')";
 
     playerRecentlyHit = true;
     setTimeout(() => { playerRecentlyHit = false; }, 1200);
