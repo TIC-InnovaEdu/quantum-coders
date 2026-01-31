@@ -3,6 +3,26 @@ const ayllu = document.getElementById('ayllu');
 const trigger = document.getElementById('trigger1');
 const puma = document.getElementById('puma');
 const stage = document.getElementById('stage');
+
+// Precarga de imágenes para evitar parpadeos blancos
+const imagesToPreload = [
+    'Resources/Backgrounds/Background1.png',
+    'Resources/Backgrounds/Background2.png',
+    'Resources/Backgrounds/Background3_5.png',
+    'Resources/Backgrounds/Background4.png',
+    'Resources/Backgrounds/Background_8.png',
+    'Resources/Backgrounds/BackGround.png',
+    'Resources/Backgrounds/fa_floor.png',
+    'Resources/Backgrounds/castle_floor.png',
+    'Resources/Backgrounds/forest_floor.png',
+    'Resources/Backgrounds/sand_floor.png'
+];
+
+imagesToPreload.forEach(src => {
+    const img = new Image();
+    img.src = src;
+});
+
 const keysPressed = {};
 const feathers = [];
 let currentPhase = 1;
