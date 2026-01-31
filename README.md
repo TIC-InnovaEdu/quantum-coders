@@ -8,6 +8,17 @@ Este proyecto es una aplicación web interactiva basada en la cultura andina, de
 Puedes acceder al juego directamente desde tu navegador aquí:
 👉 **[https://tic-innovaedu.github.io/quantum-coders/](https://tic-innovaedu.github.io/quantum-coders/)**
 
+## � Carpeta de Instalación (Recomendado para Presentaciones)
+Para facilitar la instalación en múltiples equipos sin descargar todo el repositorio, utiliza la carpeta `Instalador`:
+
+1. Copia la carpeta **`Instalador`** a tu pendrive.
+2. En la máquina de destino, abre la carpeta y ejecuta **`setup.ps1`** (Clic derecho > Ejecutar con PowerShell).
+3. El script creará automáticamente un acceso directo en el **Escritorio** con el icono del juego y en modo aplicación independiente.
+
+### Contenido de la carpeta Instalador:
+- `setup.ps1`: Script de automatización.
+- `Assets/Icono.png`: Imagen oficial para el acceso directo.
+
 ## 👥 Integrantes del Equipo
 - **Rodrigo Damián Orlando**
 - **Henry Mateo Rosero Gaibor**
