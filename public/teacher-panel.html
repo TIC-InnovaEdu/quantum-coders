@@ -4,17 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Cache Control Headers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Panel Docente - Runa Pachawan</title>
     <link rel="stylesheet" href="interface.css">
-    <script type="module" src="auth.js"></script>
-    <script type="module" src="courses.js"></script>
-    <script type="module" src="questions.js"></script>
+    <script type="module" src="auth.js?v=1.3"></script>
+    <script type="module" src="courses.js?v=1.3"></script>
+    <script type="module" src="questions.js?v=1.3"></script>
     <script>
         // Esperar a que los módulos carguen
         setTimeout(() => {
             // Hacer funciones disponibles globalmente
             window.getCurrentUser = window.getCurrentUser || function () {
-                return JSON.parse(localStorage.getItem('user'));
+                return JSON.parse(localStorage.getItem('qc_user')) || null;
             };
             window.isTeacher = window.isTeacher || function () {
                 const user = window.getCurrentUser();
@@ -1301,8 +1305,23 @@
             }
             console.log('🔍 Panel docente cargado');
 
-            // Esperar un momento a que los scripts carguen
+            // Esperar más tiempo a que los scripts carguen completamente
             setTimeout(() => {
+                console.log('🔍 Verificando autenticación en teacher-panel...');
+                
+                // Verificar que auth.js esté cargado
+                if (typeof window.getCurrentUser !== 'function') {
+                    console.error('❌ auth.js no está cargado');
+                    document.body.innerHTML = `
+                        <div class="error-container">
+                            <h2>❌ Error de carga</h2>
+                            <p>No se pudo cargar el sistema de autenticación. Recarga la página.</p>
+                            <a href="index.html" class="btn">Ir al inicio</a>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 const user = window.getCurrentUser();
                 console.log('👤 Usuario actual:', user);
                 console.log('🔐 ¿Es docente?', window.isTeacher());
@@ -1347,9 +1366,9 @@
                     setTimeout(() => {
                         document.getElementById('courseSelect').value = savedCourseId;
                         showTab('manage');
-                    }, 600);
+                    }, 1000);
                 }
-            }, 500);
+            }, 1000); // Aumentado a 1000ms para dar más tiempo
         });
     </script>
 </body>
