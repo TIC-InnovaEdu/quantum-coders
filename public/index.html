@@ -18,6 +18,9 @@
     rel="stylesheet">
 
   <script type="module" src="auth.js"></script>
+  <script type="module" src="questions.js"></script>
+  <script src="load-initial-questions.js"></script>
+  <script src="migrate-mongo-to-firebase.js"></script>
 </head>
 
 <body>
@@ -28,6 +31,25 @@
         <button id="tabLogin" class="active">Iniciar sesión</button>
         <button id="tabRegister">Crear cuenta</button>
       </div>
+      
+      <!-- Selección de rol (visible siempre) -->
+      <div class="role-selection" style="margin-bottom: 20px; text-align: center;">
+        <p style="margin-bottom: 15px; font-size: 16px;">¿Cómo quieres ingresar?</p>
+        <div class="role-buttons" style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px;">
+          <button type="button" class="role-btn student" onclick="selectRole('student')">
+            <span class="role-icon">🎓</span>
+            <span class="role-text">Estudiante</span>
+            <span class="role-desc">Jugar y aprender</span>
+          </button>
+          <button type="button" class="role-btn teacher" onclick="selectRole('teacher')">
+            <span class="role-icon">👨‍🏫</span>
+            <span class="role-text">Docente</span>
+            <span class="role-desc">Gestionar preguntas</span>
+          </button>
+        </div>
+        <div id="selectedRoleDisplay" style="font-size: 14px; margin-top: 10px;"></div>
+      </div>
+
       <form id="authLoginForm" class="auth-form">
         <label>Usuario</label>
         <input id="loginEmail" type="text" class="auth-input" required placeholder="Tu nombre de usuario" />
@@ -43,6 +65,7 @@
           Google
         </button>
       </form>
+      
       <form id="authRegisterForm" class="auth-form" style="display:none;">
         <label>Nombre Completo</label>
         <input id="regName" type="text" class="auth-input" required maxlength="40" placeholder="Ej: Juan Pérez" />
@@ -50,6 +73,7 @@
         <input id="regEmail" type="text" class="auth-input" required placeholder="Ej: juanito123" />
         <label>Contraseña</label>
         <input id="regPassword" type="password" class="auth-input" required minlength="6" />
+        <input type="hidden" id="regRole" name="regRole" value="student">
         <div class="auth-actions">
           <button type="submit" class="primary">Crear cuenta</button>
         </div>
@@ -80,6 +104,7 @@
         <button id="playButton" class="primary">Iniciar Aventura</button>
         <button id="restartButton" class="primary" style="display: none;">Reiniciar Partida</button>
         <button id="leaderboardButton" class="primary">Mejores Puntajes</button>
+        <button id="teacherPanelButton" class="primary" style="display: none;">Panel Docente</button>
         <button id="logoutButton" class="primary logout-btn">Cerrar Sesión</button>
       </div>
 
@@ -114,6 +139,7 @@
 
         <!-- Plataforma 3 -->
         <div class="platform" style="left: 900px; bottom: 390px; width: 120px; height: 20px;"></div>
+        <div class="collectible" id="runa2"></div>
       </div>
 
       <!--Scenario 3-->
@@ -124,6 +150,7 @@
         <!-- Plataforma derecha -->
         <div class="platform" style="left: 1200px; bottom: 200px; width: 120px; height: 20px;"></div>
         <div class="platform" style="left: 1200px; bottom: 320px; width: 120px; height: 20px;"></div>
+        <div class="collectible" id="runa3"></div>
       </div>
 
       <!-- Nivel 4 -->
@@ -228,23 +255,23 @@
       <div class="collectible" id="runa1" style="left: 700px; bottom: 180px;"></div>
       <div class="character" id="player"></div>
       <!--Integración de Ayllu-->
-      <div class="companion" id="ayllu">
-        <div class="npc-label">Presiona 'B'</div>
-      </div>
+      <div class="companion" id="ayllu"></div>
       <div class="scene-trigger" id="trigger1"></div>
       <div class="enemy" id="puma" style="display: none;"></div>
 
       <div class="blocker" style="left: 1250px; bottom: 100px;"></div>
-      <!-- Cuadro de pregunta tipo quiz -->
-      <div id="quiz-container" style="display: none;">
-        <div id="quiz-box">
-          <p id="quiz-question">Pregunta aquí...</p>
-          <ul id="quiz-options">
-            <li class="quiz-option selected">Opción 1</li>
-            <li class="quiz-option">Opción 2</li>
-            <li class="quiz-option">Opción 3</li>
-          </ul>
-        </div>
+    </div>
+    
+    <!-- Cuadro de pregunta tipo quiz (movido fuera del stage) -->
+    <div id="quiz-container" style="display: none;">
+      <div id="quiz-box">
+        <p id="quiz-question">Pregunta aquí...</p>
+        <ul id="quiz-options">
+          <li class="quiz-option selected">Opción 1</li>
+          <li class="quiz-option">Opción 2</li>
+          <li class="quiz-option">Opción 3</li>
+        </ul>
+        <p class="quiz-keyboard-hint">Usa las flechas para seleccionar y A para responder</p>
       </div>
     </div>
 
@@ -253,8 +280,8 @@
       <div id="life-bar">
         <img id="lifeImage" src="Resources/vida4.png" />
       </div>
-      <!-- Contador de sabiduría -->
-      <div id="wisdom-bar">
+      <!-- Contador de sabiduría (oculto) -->
+      <div id="wisdom-bar" style="display: none !important;">
         <span id="wisdom-label">Sabiduría:</span>
         <span id="wisdom-points">0</span>
       </div>
@@ -284,6 +311,7 @@
     <div id="runa-quiz-box">
       <p id="runa-quiz-question"></p>
       <ul id="runa-quiz-options"></ul>
+      <p class="quiz-keyboard-hint">Usa las flechas para seleccionar y A para responder</p>
     </div>
   </div>
   <div id="overlay"></div>
