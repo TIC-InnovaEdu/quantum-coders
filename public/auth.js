@@ -11,7 +11,10 @@ import {
   query,
   orderBy,
   limit,
-  connectFirestoreEmulator
+  connectFirestoreEmulator,
+  getDoc,
+  updateDoc,
+  where
 } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 import {
   getAuth,
@@ -52,17 +55,28 @@ window.firebaseAuth = auth;
 
 // Escuchar cambios de autenticación para sincronizar UI
 if (auth) {
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
       console.log("Usuario autenticado en Firebase:", user.email);
+      // Obtener rol real desde Firestore (no hardcodear 'student')
+      let realRole = 'student';
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          realRole = userDoc.data().role || 'student';
+        }
+      } catch (e) {
+        console.warn("No se pudo obtener rol de Firestore, usando 'student':", e);
+      }
       const userData = {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName || user.email.split('@')[0],
-        photoURL: user.photoURL
+        photoURL: user.photoURL,
+        role: realRole
       };
       lsSetUser(userData);
-      syncUserToFirestore(user);
+      await syncUserToFirestore(user, realRole);
       showMenu();
       if (typeof window.updateGameHUD === 'function') {
         window.updateGameHUD();
@@ -256,6 +270,55 @@ window.getCurrentUser = function () {
   return lsGetUser();
 };
 
+// Función para manejar la selección de rol
+window.selectRole = function (role) {
+  // Actualizar botones visuales
+  document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.classList.remove('selected');
+  });
+
+  // Marcar botón seleccionado
+  const selectedBtn = document.querySelector(`.role-btn.${role}`);
+  if (selectedBtn) {
+    selectedBtn.classList.add('selected');
+  }
+
+  // Actualizar campo oculto del formulario
+  const roleInput = document.getElementById('regRole');
+  if (roleInput) {
+    roleInput.value = role;
+  }
+
+  // Mostrar mensaje de confirmación
+  const display = document.getElementById('selectedRoleDisplay');
+  if (display) {
+    const roleText = role === 'student' ? 'Estudiante' : 'Docente';
+    const roleDesc = role === 'student' ? 'Podrás jugar y aprender' : 'Podrás gestionar preguntas y ver estadísticas';
+    display.innerHTML = `✅ Rol seleccionado: <strong>${roleText}</strong> - ${roleDesc}`;
+  }
+
+  // Para login, guardar el rol seleccionado
+  window.selectedLoginRole = role;
+};
+
+// Función para verificar si el usuario actual es docente
+window.isTeacher = function () {
+  const user = lsGetUser();
+  return user && user.role === 'teacher';
+};
+
+// Función para verificar si el usuario actual es estudiante
+window.isStudent = function () {
+  const user = lsGetUser();
+  return user && user.role === 'student';
+};
+
+// Función para obtener rol del usuario actual
+window.getUserRole = function () {
+  const user = lsGetUser();
+  return user ? user.role : null;
+};
+
 window.authSignOut = async function () {
   if (auth) { try { await signOut(auth); } catch (e) { console.warn(e); } }
   lsClearUser();
@@ -268,8 +331,23 @@ window.authSignIn = async function (username, password) {
   try {
     const cred = await signInWithEmailAndPassword(auth, virtualEmail, password);
     const u = cred.user;
-    const user = { uid: u.uid, email: virtualEmail, displayName: username };
+
+    // Obtener rol del usuario desde Firestore
+    const userDoc = await getDoc(doc(db, "users", u.uid));
+    const userData = userDoc.exists() ? userDoc.data() : { role: 'student' };
+
+    const user = {
+      uid: u.uid,
+      email: virtualEmail,
+      displayName: username,
+      role: userData.role || 'student'
+    };
     lsSetUser(user);
+
+    // Mostrar mensaje de bienvenida según rol
+    const roleText = userData.role === 'teacher' ? 'Docente' : 'Estudiante';
+    console.log(`Bienvenido/a ${roleText}: ${username}`);
+
     return user;
   } catch (err) {
     console.error("Error en authSignIn:", err.code, err.message);
@@ -277,14 +355,22 @@ window.authSignIn = async function (username, password) {
   }
 };
 
-window.authRegister = async function (name, username, password) {
+window.authRegister = async function (name, username, password, role = 'student') {
   const virtualEmail = username.includes("@") ? username : `${username.toLowerCase().trim()}@runapachawan.com`;
   if (!auth) throw new Error("Servicio de autenticación no disponible.");
   try {
+    console.log('📝 Registrando usuario con rol:', role);
     const cred = await createUserWithEmailAndPassword(auth, virtualEmail, password);
     const u = cred.user;
-    const user = { uid: u.uid, email: virtualEmail, displayName: name || username };
+    const user = {
+      uid: u.uid,
+      email: virtualEmail,
+      displayName: name || username,
+      role: role
+    };
+    console.log('✅ Usuario creado:', user);
     lsSetUser(user);
+    await syncUserToFirestore(u, role);
     return user;
   } catch (err) {
     console.error("Error en authRegister:", err.code, err.message);
@@ -305,18 +391,66 @@ function showMenu() {
   const authScreen = document.getElementById("authScreen");
   const menu = document.getElementById("menu");
   const label = document.getElementById("currentUserDisplay");
+  const teacherPanelBtn = document.getElementById("teacherPanelButton");
 
   if (window.playSceneMusic) window.playSceneMusic('menu');
 
-  document.getElementById('menuStats').style.display = 'none';
-  document.getElementById('restartButton').style.display = 'none';
-  document.getElementById('gameTitle').textContent = "RUNA PACHAWAN";
-  document.getElementById('playButton').textContent = "Iniciar Aventura";
+  // Verificar que los elementos existan antes de acceder a sus propiedades
+  const menuStats = document.getElementById('menuStats');
+  if (menuStats) menuStats.style.display = 'none';
+
+  const restartButton = document.getElementById('restartButton');
+  if (restartButton) restartButton.style.display = 'none';
+
+  const gameTitle = document.getElementById('gameTitle');
+  if (gameTitle) gameTitle.textContent = "RUNA PACHAWAN";
+
+  const playButton = document.getElementById('playButton');
+  if (playButton) playButton.textContent = "Iniciar Aventura";
 
   const current = window.getCurrentUser ? window.getCurrentUser() : null;
   if (current) {
     const name = current.displayName || current.name || current.email?.split('@')[0] || "Jugador";
-    if (label) label.textContent = "Jugador: " + name;
+    const roleText = current.role === 'teacher' ? 'Docente' : 'Estudiante';
+    const roleIcon = current.role === 'teacher' ? '👨‍🏫' : '🎓';
+
+    if (label) {
+      label.innerHTML = `${roleIcon} <strong>${name}</strong> (${roleText})`;
+    }
+
+    // Si es docente, redirigir automáticamente al panel docente
+    // Solo redirigir si estamos en index.html o la raíz (no en páginas docentes)
+    // EXCEPCIÓN: Si la URL tiene ?play=true o si venimos con el flag en sessionStorage, permitir jugar
+    if (current.role === 'teacher') {
+      const path = window.location.pathname;
+      const search = window.location.search;
+      const isMainPage = path.endsWith('/') || path.endsWith('/index.html') || path.endsWith('index.html') || path === '';
+
+      // Permitir jugar si hay parámetro o flag de sesión
+      if (search.includes('play=true')) {
+        sessionStorage.setItem('teacher_mode', 'play');
+      }
+
+      const isPlayMode = sessionStorage.getItem('teacher_mode') === 'play';
+
+      if (isMainPage && !isPlayMode) {
+        console.log('👨‍🏫 Docente en página principal sin modo juego, redirigiendo...');
+        window.location.href = 'teacher-panel.html';
+        return;
+      }
+    }
+
+    console.log('🎓 Usuario estudiante detectado:', current);
+    console.log('📱 Mostrando menú del juego...');
+
+    // Mostrar botón de panel docente solo si el usuario es docente
+    if (teacherPanelBtn) {
+      teacherPanelBtn.style.display = current.role === 'teacher' ? 'inline-block' : 'none';
+      teacherPanelBtn.onclick = () => {
+        sessionStorage.removeItem('teacher_mode'); // Salir del modo juego
+        window.location.href = 'teacher-panel.html';
+      };
+    }
   }
 
   if (!authScreen || !menu) return;
@@ -336,17 +470,32 @@ function showMenu() {
 window.showAuth = showAuth;
 window.showMenu = showMenu;
 
-async function syncUserToFirestore(user) {
+async function syncUserToFirestore(user, role = 'student') {
   if (!user || !user.uid) return;
   try {
     const userDocRef = doc(db, "users", user.uid);
-    await setDoc(userDocRef, {
-      uid: user.uid,
-      username: user.displayName || user.email.split('@')[0],
-      email: user.email,
-      photoURL: user.photoURL || null,
-      lastLogin: new Date().toISOString()
-    }, { merge: true });
+    const userDoc = await getDoc(userDocRef);
+
+    // Si el usuario no existe, crear con rol por defecto
+    if (!userDoc.exists()) {
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || null,
+        role: role,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      });
+    } else {
+      // Actualizar último login
+      await updateDoc(userDocRef, {
+        lastLogin: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    }
   } catch (e) {
     console.warn("Error sincronizando usuario a Firestore:", e);
   }
@@ -392,6 +541,9 @@ window.__authHandlersInit = function () {
       const msg = document.getElementById("authLoginMessage");
       if (msg) { msg.textContent = "Conectando con Google..."; msg.style.color = "#ffd700"; }
       googleBtn.disabled = true;
+
+      console.log('🔍 Rol seleccionado para login con Google:', window.selectedLoginRole);
+
       try {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
@@ -400,10 +552,11 @@ window.__authHandlersInit = function () {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || user.email.split('@')[0],
-          photoURL: user.photoURL
+          photoURL: user.photoURL,
+          role: window.selectedLoginRole || 'student' // Usar rol seleccionado o estudiante por defecto
         };
         lsSetUser(userData);
-        await syncUserToFirestore(user);
+        await syncUserToFirestore(user, window.selectedLoginRole || 'student');
         if (msg) { msg.textContent = "¡Bienvenido!"; msg.style.color = "#4CAF50"; }
         setTimeout(() => {
           showMenu();
@@ -443,12 +596,13 @@ window.__authHandlersInit = function () {
       const name = document.getElementById("regName").value.trim();
       const username = document.getElementById("regEmail").value.trim();
       const pass = document.getElementById("regPassword").value;
+      const role = document.getElementById("regRole").value;
       const msg = document.getElementById("authRegisterMessage");
       const btn = registerForm.querySelector("button[type='submit']");
       if (msg) { msg.textContent = "Creando cuenta..."; msg.style.color = "#ffd700"; }
       if (btn) btn.disabled = true;
       try {
-        await window.authRegister(name, username, pass);
+        await window.authRegister(name, username, pass, role);
         if (msg) { msg.textContent = "Cuenta creada con éxito."; msg.style.color = "#4CAF50"; }
         setTimeout(() => { showMenu(); if (btn) btn.disabled = false; }, 500);
       } catch (err) {
@@ -456,6 +610,36 @@ window.__authHandlersInit = function () {
         if (btn) btn.disabled = false;
       }
     };
+  }
+
+  // Event listeners para botones del menú
+  const leaderboardBtn = document.getElementById("leaderboardButton");
+  if (leaderboardBtn) {
+    leaderboardBtn.addEventListener("click", () => {
+      if (typeof window.showLeaderboard === "function") {
+        window.showLeaderboard();
+      }
+    });
+  }
+
+  const teacherPanelBtn = document.getElementById("teacherPanelButton");
+  if (teacherPanelBtn) {
+    teacherPanelBtn.addEventListener("click", () => {
+      if (window.isTeacher && window.isTeacher()) {
+        // Ocultar el juego y mostrar el panel docente
+        const gameContainer = document.getElementById("game-container");
+        const menu = document.getElementById("menu");
+
+        if (gameContainer) gameContainer.style.display = "none";
+        if (menu) menu.style.display = "none";
+
+        // Redirigir al panel docente en la misma ventana y limpiar modo juego
+        sessionStorage.removeItem('teacher_mode');
+        window.location.href = 'teacher-panel.html';
+      } else {
+        alert('No tienes permisos para acceder al panel docente.');
+      }
+    });
   }
 };
 
