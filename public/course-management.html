@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Cursos - Runa Pachawan</title>
+    <link rel="stylesheet" href="interface.css">
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="courses.js"></script>
+    <script type="module" src="questions.js"></script>
+    <script>
+        // Esperar a que los módulos carguen
+        setTimeout(() => {
+            window.getCurrentUser = window.getCurrentUser || function () {
+                return JSON.parse(localStorage.getItem('user'));
+            };
+            window.isTeacher = window.isTeacher || function () {
+                const user = window.getCurrentUser();
+                return user && user.role === 'teacher';
+            };
+        }, 100);
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap');
+
+        /* === Variables de Color — Tema Andino (coherente con el panel docente) === */
+        :root {
+            --primary-color: #4a3416;
+            --secondary-color: #5a3e1b;
+            --accent-color: #ffd700;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --text-primary: #f2e1c1;
+            --text-secondary: #d2a679;
+            --bg-primary: #1a0e05;
+            --bg-secondary: #2c1e0f;
+            --bg-card: #3a2714;
+            --border-color: #a66e00;
+            --shadow: rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Cinzel', 'Papyrus', serif;
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .course-management {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .panel-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: var(--bg-card);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .panel-header h1 {
+            margin: 0 0 10px 0;
+            color: var(--text-primary);
+            font-size: 2.5em;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-header p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 1.1em;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 24px;
+            background: #9c3d0f;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(156, 61, 15, 0.3);
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .back-btn:hover {
+            background: #b5491a;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(156, 61, 15, 0.4);
+        }
+
+        .panel-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--text-primary);
+            border-color: var(--accent-color);
+        }
+
+        .tab-btn.active {
+            background: #9c3d0f;
+            color: white;
+            border-color: #9c3d0f;
+            box-shadow: 0 4px 12px rgba(156, 61, 15, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px var(--shadow);
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.8em;
+            font-weight: 500;
+        }
+
+        .form-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 16px var(--shadow);
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.4em;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1em;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-secondary);
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #9c3d0f;
+            color: white;
+            box-shadow: 0 4px 12px rgba(156, 61, 15, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #b5491a;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(156, 61, 15, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: var(--text-primary);
+            box-shadow: 0 4px 12px rgba(74, 52, 22, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: #6b4a25;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 52, 22, 0.4);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .course-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .course-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 16px rgba(255, 215, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .course-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .course-title {
+            color: var(--text-primary);
+            font-size: 1.3em;
+            font-weight: 500;
+            margin: 0;
+            flex: 1;
+        }
+
+        .course-code {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #9c3d0f;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            font-family: monospace;
+        }
+
+        .course-description {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .course-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+
+        .course-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .error-container {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--bg-card);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px var(--shadow);
+            border: 1px solid var(--border-color);
+            max-width: 500px;
+            margin: 100px auto;
+        }
+
+        .error-container h2 {
+            color: var(--danger-color);
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .error-container p {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .error-container .btn {
+            background: #9c3d0f;
+            color: white;
+            text-decoration: none;
+        }
+
+        .info {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .course-management {
+                padding: 20px 15px;
+            }
+
+            .panel-tabs {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                text-align: center;
+            }
+
+            .courses-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .course-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button id="backToTeacherBtn" class="back-btn" type="button">← Volver al Panel Docente</button>
+
+    <div class="course-management">
+        <div class="panel-header">
+            <h1>Gestión de Cursos</h1>
+            <p>Crea y administra tus cursos educativos</p>
+        </div>
+
+        <div class="panel-tabs">
+            <button class="tab-btn active" onclick="showTab('courses')">Mis Cursos</button>
+            <button class="tab-btn" onclick="showTab('create')">Crear Curso</button>
+            <button class="tab-btn" onclick="showTab('enrollments')">Inscripciones</button>
+        </div>
+
+        <!-- Tab: Mis Cursos -->
+        <div id="courses-tab" class="tab-content active">
+            <div class="section-header">
+                <h2>Mis Cursos</h2>
+                <button class="btn btn-primary" onclick="showCreateCourseForm()">
+                    <span>➕ Nuevo Curso</span>
+                </button>
+            </div>
+
+            <div id="coursesList" class="courses-grid">
+                <p>Cargando cursos...</p>
+            </div>
+        </div>
+
+        <!-- Tab: Crear Curso -->
+        <div id="create-tab" class="tab-content">
+            <div class="form-container">
+                <div class="form-header">
+                    <h3>Crear Nuevo Curso</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="hideCreateCourseForm()">✖ Cancelar</button>
+                </div>
+                <form id="courseForm">
+                    <div class="form-group">
+                        <label for="courseName">Nombre del Curso</label>
+                        <input type="text" id="courseName" class="form-control" placeholder="Ej: Matemáticas 5to Grado"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="courseDescription">Descripción</label>
+                        <textarea id="courseDescription" class="form-control"
+                            placeholder="Describe el contenido y objetivos del curso..." rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="courseCategory">Categoría</label>
+                        <select id="courseCategory" class="form-control" required>
+                            <option value="">Cargando categorías...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="courseDifficulty">Dificultad</label>
+                        <select id="courseDifficulty" class="form-control" required>
+                            <option value="">Selecciona la dificultad</option>
+                            <option value="facil">Fácil</option>
+                            <option value="medio">Medio</option>
+                            <option value="dificil">Difícil</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="maxStudents">Máximo de Estudiantes</label>
+                        <input type="number" id="maxStudents" class="form-control" min="1" max="100" value="30"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="allowRegistration">Permitir inscripción automática</label>
+                        <select id="allowRegistration" class="form-control">
+                            <option value="true">Sí</option>
+                            <option value="false">No (solo manual)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary"
+                            onclick="hideCreateCourseForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Crear Curso</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tab: Inscripciones -->
+        <div id="enrollments-tab" class="tab-content">
+            <h2>Gestionar Inscripciones</h2>
+            <div id="enrollmentsList">
+                <p>Selecciona un curso para ver las inscripciones...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        let courses = [];
+        let currentEditId = null;
+        let selectedCourseId = null;
+        let isLoadingCourses = false;
+
+        // Función para mostrar/ocultar tabs
+        function showTab(tabName) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Mostrar el tab seleccionado
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            // Activar el botón correspondiente (evitar error de event.target)
+            const tabBtn = document.querySelector(`[onclick="showTab('${tabName}')"]`);
+            if (tabBtn) tabBtn.classList.add('active');
+
+            // Cargar datos específicos del tab
+            if (tabName === 'courses') {
+                loadCourses();
+            }
+        }
+
+        // Función para mostrar formulario de crear curso
+        function showCreateCourseForm() {
+            currentEditId = null;
+            document.getElementById('courseForm').reset();
+            document.getElementById('create-tab').querySelector('.form-header h3').textContent = 'Crear Nuevo Curso';
+            showTab('create');
+        }
+
+        // Función para ocultar formulario
+        function hideCreateCourseForm() {
+            document.getElementById('courseForm').reset();
+            currentEditId = null;
+            showTab('courses');
+        }
+
+        // Función para cargar cursos
+        async function loadCourses() {
+            // Evitar ejecución múltiple
+            if (isLoadingCourses) {
+                console.log('⏭️ Ya se están cargando cursos, evitando ejecución duplicada');
+                return;
+            }
+
+            isLoadingCourses = true;
+
+            try {
+                const user = window.getCurrentUser();
+                if (!user) {
+                    throw new Error('Usuario no autenticado');
+                }
+
+                courses = await window.getTeacherCourses(user.uid);
+                displayCourses(courses);
+            } catch (error) {
+                console.error('Error cargando cursos:', error);
+                console.log('🔍 Error completo:', JSON.stringify(error, null, 2));
+                console.log('🔍 Mensaje de error:', error.message);
+                console.log('🔍 Código de error:', error.code);
+
+                // Diferenciar entre error real y ausencia de cursos
+                if (error.message && error.message.includes('Usuario no autenticado')) {
+                    document.getElementById('coursesList').innerHTML = '<p class="error">Error: Usuario no autenticado</p>';
+                } else if (error.message && error.message.includes('permission-denied')) {
+                    document.getElementById('coursesList').innerHTML = '<p class="error">Error: No tienes permisos para acceder a los cursos</p>';
+                } else if (error.message && error.message.includes('not found')) {
+                    document.getElementById('coursesList').innerHTML = '<p class="info">La colección de cursos no existe. Crea tu primer curso.</p>';
+                } else {
+                    // Si es cualquier otro error, mostrar mensaje amigable con detalles
+                    document.getElementById('coursesList').innerHTML = `
+                        <p class="info">No se pudieron cargar los cursos. Intenta recargar la página.</p>
+                        <p class="error" style="font-size: 0.8em; margin-top: 10px;">Detalles: ${error.message || 'Error desconocido'}</p>
+                    `;
+                }
+            } finally {
+                isLoadingCourses = false;
+            }
+        }
+
+        // Función para mostrar cursos
+        function displayCourses(coursesToShow) {
+            const container = document.getElementById('coursesList');
+
+            if (coursesToShow.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <h3>🎓 No tienes cursos creados</h3>
+                        <p>Crea tu primer curso para empezar a gestionar contenido educativo.</p>
+                        <button class="btn btn-primary" onclick="showCreateCourseForm()" style="margin-top: 20px;">
+                            ➕ Crear Primer Curso
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = coursesToShow.map(course => `
+                <div class="course-card">
+                    <div class="course-header">
+                        <h3 class="course-title">${course.name}</h3>
+                        <span class="course-code">${course.code}</span>
+                    </div>
+                    <p class="course-description">${course.description || 'Sin descripción'}</p>
+                    <div class="course-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">${course.stats?.totalStudents || 0}</div>
+                            <div class="stat-label">Estudiantes</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${course.stats?.totalQuestions || 0}</div>
+                            <div class="stat-label">Preguntas</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${course.stats?.activeStudents || 0}</div>
+                            <div class="stat-label">Activos</div>
+                        </div>
+                    </div>
+                    <div class="course-actions">
+                        <button class="btn btn-primary btn-sm" onclick="manageCourseQuestions('${course.id}')">
+                            📝 Preguntas
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="viewCourseEnrollments('${course.id}')">
+                            👥 Estudiantes
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="handleDeleteCourse('${course.id}')">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Función para gestionar preguntas de un curso
+        function manageCourseQuestions(courseId) {
+            localStorage.setItem('selectedCourseId', courseId);
+            window.location.href = 'teacher-panel.html';
+        }
+
+        // Función para ver inscripciones de un curso
+        async function viewCourseEnrollments(courseId) {
+            try {
+                selectedCourseId = courseId;
+                const enrollments = await window.coursesManager.getCourseEnrollments(courseId);
+                displayEnrollments(enrollments, courseId);
+                showTab('enrollments');
+            } catch (error) {
+                console.error('Error cargando inscripciones:', error);
+                document.getElementById('enrollmentsList').innerHTML = '<p class="error">Error cargando inscripciones</p>';
+            }
+        }
+        function displayEnrollments(enrollments, courseId) {
+            const container = document.getElementById('enrollmentsList');
+
+            if (enrollments.length === 0) {
+                container.innerHTML = '<p>No hay estudiantes inscritos en este curso.</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <h3>Estudiantes Inscritos (${enrollments.length})</h3>
+                <div style="background: var(--bg-secondary); border-radius: 12px; padding: 20px; margin-top: 20px;">
+                    ${enrollments.map(enrollment => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border-color);">
+                            <div>
+                                <strong>${enrollment.studentName}</strong>
+                                <div style="color: var(--text-secondary); font-size: 0.9em;">
+                                    Inscrito: ${new Date(enrollment.enrolledAt?.toDate?.() || enrollment.enrolledAt).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="color: var(--accent-color); font-weight: bold;">
+                                    ${enrollment.progress?.correctAnswers || 0}/${enrollment.progress?.questionsAnswered || 0} correctas
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 0.9em;">
+                                    ${enrollment.progress?.totalPoints || 0} puntos
+                                </div>
+                                <button class="btn btn-danger btn-sm" onclick="handleUnenrollStudent('${courseId}', '${enrollment.studentId}')" style="margin-top: 10px;">
+                                    Expulsar
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Función para eliminar curso (nombre distinto para evitar conflicto con window.deleteCourse de courses.js)
+        async function handleDeleteCourse(courseId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar este curso? Esta acción eliminará todas las preguntas e inscripciones asociadas.')) {
+                return;
+            }
+
+            try {
+                await window.coursesManager.deleteCourse(courseId);
+                courses = courses.filter(c => c.id !== courseId);
+                displayCourses(courses);
+                alert('Curso eliminado correctamente');
+            } catch (error) {
+                console.error('Error eliminando curso:', error);
+                alert('Error eliminando curso: ' + error.message);
+            }
+        }
+
+        // Función para expulsar estudiante (nombre distinto para evitar conflicto con window.unenrollStudent de courses.js)
+        async function handleUnenrollStudent(courseId, studentId) {
+            if (!confirm('¿Estás seguro de que quieres expulsar a este estudiante del curso?')) {
+                return;
+            }
+
+            try {
+                await window.coursesManager.unenrollStudent(courseId, studentId);
+                await viewCourseEnrollments(courseId);
+                alert('Estudiante expulsado correctamente');
+            } catch (error) {
+                console.error('Error expulsando estudiante:', error);
+                alert('Error expulsando estudiante: ' + error.message);
+            }
+        }
+
+        // Manejar envío del formulario
+        document.getElementById('courseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                name: document.getElementById('courseName').value,
+                description: document.getElementById('courseDescription').value,
+                category: document.getElementById('courseCategory').value,
+                difficulty: document.getElementById('courseDifficulty').value,
+                maxStudents: parseInt(document.getElementById('maxStudents').value),
+                allowStudentRegistration: document.getElementById('allowRegistration').value === 'true'
+            };
+
+            try {
+                await window.createCourse(formData);
+                alert('Curso creado correctamente');
+                hideCreateCourseForm();
+                loadCourses();
+            } catch (error) {
+                console.error('Error creando curso:', error);
+                alert('Error creando curso: ' + error.message);
+            }
+        });
+
+        // Hacer funciones globales
+        window.showTab = showTab;
+        window.showCreateCourseForm = showCreateCourseForm;
+        window.hideCreateCourseForm = hideCreateCourseForm;
+        window.manageCourseQuestions = manageCourseQuestions;
+        window.viewCourseEnrollments = viewCourseEnrollments;
+        window.handleDeleteCourse = handleDeleteCourse;
+        window.handleUnenrollStudent = handleUnenrollStudent;
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔍 Gestión de cursos cargada');
+
+            const backToTeacherBtn = document.getElementById('backToTeacherBtn');
+            if (backToTeacherBtn) {
+                backToTeacherBtn.addEventListener('click', () => {
+                    window.location.href = 'teacher-panel.html';
+                });
+            }
+
+            // Esperar un momento a que los scripts carguen
+            setTimeout(() => {
+                const user = window.getCurrentUser();
+                console.log('👤 Usuario actual:', user);
+                console.log('🔐 ¿Es docente?', window.isTeacher());
+
+                // Verificar que el usuario esté autenticado
+                if (!user) {
+                    console.log('❌ Acceso denegado: usuario no autenticado');
+                    document.body.innerHTML = `
+                        <div class="error-container">
+                            <h2>❌ Usuario no autenticado</h2>
+                            <p>Por favor, inicia sesión primero.</p>
+                            <a href="index.html" class="btn">Ir al inicio de sesión</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Verificar que el usuario sea docente
+                if (!window.isTeacher()) {
+                    console.log('❌ Acceso denegado: el usuario no es docente');
+                    document.body.innerHTML = `
+                        <div class="error-container">
+                            <h2>❌ Acceso denegado</h2>
+                            <p>No tienes permisos de docente.</p>
+                            <a href="index.html" class="btn">Volver al juego</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                console.log('✅ Acceso permitido: usuario docente verificado');
+                // Cargar cursos iniciales (solo una vez)
+                loadCourses();
+                // Cargar categorías dinámicas en el dropdown
+                if (window.loadCategories) {
+                    window.loadCategories().then(cats => {
+                        const select = document.getElementById('courseCategory');
+                        if (select) {
+                            select.innerHTML = '<option value="">Selecciona una categoría</option>';
+                            cats.forEach(c => {
+                                select.innerHTML += `<option value="${c.id}">${c.icono || ''} ${c.nombre}</option>`;
+                            });
+                        }
+                    });
+                }
+            }, 500);
+        });
+    </script>
+</body>
+
+</html>

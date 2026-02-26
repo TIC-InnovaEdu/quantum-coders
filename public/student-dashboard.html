@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Estudiante - Runa Pachawan</title>
+    <link rel="stylesheet" href="interface.css">
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="courses.js"></script>
+    <script type="module" src="questions.js"></script>
+    <script>
+        // Esperar a que los módulos carguen
+        setTimeout(() => {
+            window.getCurrentUser = window.getCurrentUser || function() {
+                return JSON.parse(localStorage.getItem('user'));
+            };
+            window.isStudent = window.isStudent || function() {
+                const user = window.getCurrentUser();
+                return user && user.role === 'student';
+            };
+        }, 100);
+    </script>
+    <style>
+        /* === Variables de Color === */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --text-primary: #ecf0f1;
+            --text-secondary: #bdc3c7;
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: #2c3e50;
+            --border-color: #34495e;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .student-dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .panel-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: var(--bg-card);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .panel-header h1 {
+            margin: 0 0 10px 0;
+            color: var(--text-primary);
+            font-size: 2.5em;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-header p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 1.1em;
+        }
+
+        .logout-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 24px;
+            background: var(--danger-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.8em;
+            font-weight: 500;
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .course-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .course-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 8px 32px rgba(52, 152, 219, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .course-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .course-title {
+            color: var(--text-primary);
+            font-size: 1.4em;
+            font-weight: 500;
+            margin: 0;
+            flex: 1;
+        }
+
+        .course-code {
+            display: inline-block;
+            padding: 6px 12px;
+            background: var(--accent-color);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            font-family: monospace;
+        }
+
+        .course-description {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .course-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), var(--accent-color));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .play-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        .play-btn:hover {
+            background: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .enroll-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px var(--shadow);
+        }
+
+        .enroll-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1em;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: var(--text-primary);
+            box-shadow: 0 4px 12px rgba(52, 73, 94, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: #2c3e50;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 73, 94, 0.4);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--bg-card);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .empty-state h3 {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .info {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .student-dashboard {
+                padding: 20px 15px;
+            }
+
+            .courses-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .course-info {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="logout-btn">🚪 Cerrar Sesión</a>
+    
+    <div class="student-dashboard">
+        <div class="panel-header">
+            <h1>Panel Estudiante</h1>
+            <p>Selecciona un curso para empezar a aprender</p>
+        </div>
+
+        <!-- Sección de inscripción a nuevo curso -->
+        <div class="enroll-section">
+            <h3>📚 Inscribirse a un Nuevo Curso</h3>
+            <form id="enrollForm">
+                <div class="form-group">
+                    <label for="courseCode">Código del Curso</label>
+                    <input type="text" id="courseCode" class="form-control" placeholder="Ej: ABC123" required maxlength="6" style="font-family: monospace; text-transform: uppercase;">
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Inscribirse</button>
+                    <button type="button" class="btn btn-secondary" onclick="clearEnrollForm()">Limpiar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sección de cursos inscritos -->
+        <div class="section-header">
+            <h2>Mis Cursos</h2>
+        </div>
+        
+        <div id="coursesList" class="courses-grid">
+            <p>Cargando cursos...</p>
+        </div>
+
+        <!-- Sección de estadísticas generales -->
+        <div class="section-header">
+            <h2>Mi Progreso General</h2>
+        </div>
+        
+        <div id="generalStats" class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalCourses">0</div>
+                <div class="stat-label">Cursos Inscritos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalQuestions">0</div>
+                <div class="stat-label">Preguntas Respondidas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalCorrect">0</div>
+                <div class="stat-label">Respuestas Correctas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalPoints">0</div>
+                <div class="stat-label">Puntos Totales</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        let courses = [];
+
+        // Función para cargar cursos del estudiante
+        async function loadStudentCourses() {
+            try {
+                const user = window.getCurrentUser();
+                if (!user) {
+                    throw new Error('Usuario no autenticado');
+                }
+
+                courses = await window.getStudentCourses(user.uid);
+                displayCourses(courses);
+                updateGeneralStats(courses);
+            } catch (error) {
+                console.error('Error cargando cursos del estudiante:', error);
+                
+                // Diferenciar entre error real y ausencia de cursos
+                if (error.message.includes('Usuario no autenticado')) {
+                    document.getElementById('coursesList').innerHTML = '<p class="error">Error: Usuario no autenticado</p>';
+                } else {
+                    // Si es cualquier otro error, mostrar mensaje amigable
+                    document.getElementById('coursesList').innerHTML = '<p class="info">No se pudieron cargar los cursos. Intenta recargar la página.</p>';
+                }
+            }
+        }
+
+        // Función para mostrar cursos
+        function displayCourses(coursesToShow) {
+            const container = document.getElementById('coursesList');
+            
+            if (coursesToShow.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>🎓 No estás inscrito en ningún curso</h3>
+                        <p>Usa el formulario de arriba para inscribirte en un curso con el código proporcionado por tu docente.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = coursesToShow.map(course => `
+                <div class="course-card" onclick="playCourse('${course.id}')">
+                    <div class="course-header">
+                        <h3 class="course-title">${course.name}</h3>
+                        <span class="course-code">${course.code}</span>
+                    </div>
+                    <p class="course-description">${course.description || 'Sin descripción'}</p>
+                    <div class="course-info">
+                        <div class="info-item">
+                            <div class="info-label">Docente</div>
+                            <div class="info-value">${course.teacherName}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Dificultad</div>
+                            <div class="info-value">${course.settings?.difficulty || 'medio'}</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${calculateProgress(course)}%"></div>
+                    </div>
+                    <button class="play-btn">🎮 Jugar Ahora</button>
+                </div>
+            `).join('');
+        }
+
+        // Función para calcular progreso
+        function calculateProgress(course) {
+            // Buscar la inscripción del estudiante en este curso
+            const user = window.getCurrentUser();
+            const enrollment = course.enrollments?.find(e => e.studentId === user.uid);
+            
+            if (!enrollment || !enrollment.progress) {
+                return 0;
+            }
+
+            const { questionsAnswered = 0, correctAnswers = 0 } = enrollment.progress;
+            if (questionsAnswered === 0) return 0;
+            
+            return Math.round((correctAnswers / questionsAnswered) * 100);
+        }
+
+        // Función para actualizar estadísticas generales
+        function updateGeneralStats(studentCourses) {
+            const user = window.getCurrentUser();
+            let totalQuestions = 0;
+            let totalCorrect = 0;
+            let totalPoints = 0;
+
+            studentCourses.forEach(course => {
+                const enrollment = course.enrollments?.find(e => e.studentId === user.uid);
+                if (enrollment && enrollment.progress) {
+                    totalQuestions += enrollment.progress.questionsAnswered || 0;
+                    totalCorrect += enrollment.progress.correctAnswers || 0;
+                    totalPoints += enrollment.progress.totalPoints || 0;
+                }
+            });
+
+            document.getElementById('totalCourses').textContent = studentCourses.length;
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            document.getElementById('totalCorrect').textContent = totalCorrect;
+            document.getElementById('totalPoints').textContent = totalPoints;
+        }
+
+        // Función para jugar un curso
+        function playCourse(courseId) {
+            // Guardar el curso seleccionado
+            localStorage.setItem('selectedCourseId', courseId);
+            
+            // Redirigir al juego
+            window.location.href = 'index.html?mode=course&course=' + courseId;
+        }
+
+        // Función para inscribirse a un curso
+        async function enrollInCourse() {
+            const courseCode = document.getElementById('courseCode').value.trim().toUpperCase();
+            
+            if (!courseCode) {
+                alert('Por favor, ingresa el código del curso');
+                return;
+            }
+
+            if (courseCode.length !== 6) {
+                alert('El código del curso debe tener exactamente 6 caracteres');
+                return;
+            }
+
+            try {
+                const user = window.getCurrentUser();
+                const result = await window.enrollStudent(courseCode, user.uid);
+                
+                alert(`¡Te has inscrito correctamente en el curso "${result.course.name}"!`);
+                clearEnrollForm();
+                loadStudentCourses(); // Recargar cursos
+            } catch (error) {
+                console.error('Error inscribiéndose en el curso:', error);
+                alert('Error inscribiéndose en el curso: ' + error.message);
+            }
+        }
+
+        // Función para limpiar formulario de inscripción
+        function clearEnrollForm() {
+            document.getElementById('enrollForm').reset();
+        }
+
+        // Manejar envío del formulario de inscripción
+        document.getElementById('enrollForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await enrollInCourse();
+        });
+
+        // Hacer funciones globales
+        window.playCourse = playCourse;
+        window.enrollInCourse = enrollInCourse;
+        window.clearEnrollForm = clearEnrollForm;
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔍 Panel estudiante cargado');
+            
+            // Esperar un momento a que los scripts carguen
+            setTimeout(() => {
+                const user = window.getCurrentUser();
+                console.log('👤 Usuario actual:', user);
+                console.log('🔐 ¿Es estudiante?', window.isStudent());
+                
+                // Verificar que el usuario esté autenticado
+                if (!user) {
+                    console.log('❌ Acceso denegado: usuario no autenticado');
+                    document.body.innerHTML = `
+                        <div class="empty-state">
+                            <h2>❌ Usuario no autenticado</h2>
+                            <p>Por favor, inicia sesión primero.</p>
+                            <a href="index.html" class="btn btn-primary">Ir al inicio de sesión</a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Verificar que el usuario sea estudiante
+                if (!window.isStudent()) {
+                    console.log('❌ Acceso denegado: el usuario no es estudiante');
+                    document.body.innerHTML = `
+                        <div class="empty-state">
+                            <h2>❌ Acceso denegado</h2>
+                            <p>Esta página es solo para estudiantes.</p>
+                            <a href="index.html" class="btn btn-primary">Volver al inicio</a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                console.log('✅ Acceso permitido: usuario estudiante verificado');
+                // Cargar cursos del estudiante
+                loadStudentCourses();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
