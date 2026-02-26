@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Panel Docente</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Panel Docente</h1>
+    
+    <div class="test-section">
+        <h2>1. Verificar Usuario Actual</h2>
+        <button class="btn" onclick="checkUser()">Verificar Usuario</button>
+        <div id="userStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Simular Usuario Docente</h2>
+        <button class="btn" onclick="simulateTeacher()">Simular Docente</button>
+        <button class="btn" onclick="simulateStudent()">Simular Estudiante</button>
+        <div id="simulateStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Acceder al Panel Docente</h2>
+        <button class="btn" onclick="goToPanel()">Ir al Panel Docente</button>
+        <div id="panelStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Limpiar Datos</h2>
+        <button class="btn" onclick="clearData()">Limpiar localStorage</button>
+        <div id="clearStatus"></div>
+    </div>
+
+    <script>
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function checkUser() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                showStatus('userStatus', `
+                    <strong>Usuario encontrado:</strong><br>
+                    UID: ${user.uid}<br>
+                    Email: ${user.email}<br>
+                    Nombre: ${user.displayName}<br>
+                    Rol: ${user.role}<br>
+                    ¿Es docente?: ${user.role === 'teacher' ? 'SÍ' : 'NO'}
+                `, user.role === 'teacher' ? 'success' : 'info');
+            } else {
+                showStatus('userStatus', 'No hay usuario en localStorage', 'error');
+            }
+        }
+        
+        function simulateTeacher() {
+            const teacherUser = {
+                uid: 'test-teacher-123',
+                email: 'teacher@test.com',
+                displayName: 'Docente de Prueba',
+                role: 'teacher',
+                photoURL: ''
+            };
+            localStorage.setItem('user', JSON.stringify(teacherUser));
+            showStatus('simulateStatus', 'Usuario docente simulado correctamente', 'success');
+            checkUser();
+        }
+        
+        function simulateStudent() {
+            const studentUser = {
+                uid: 'test-student-123',
+                email: 'student@test.com',
+                displayName: 'Estudiante de Prueba',
+                role: 'student',
+                photoURL: ''
+            };
+            localStorage.setItem('user', JSON.stringify(studentUser));
+            showStatus('simulateStatus', 'Usuario estudiante simulado correctamente', 'success');
+            checkUser();
+        }
+        
+        function goToPanel() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                showStatus('panelStatus', 'No hay usuario. Primero simula un usuario.', 'error');
+                return;
+            }
+            
+            if (user.role !== 'teacher') {
+                showStatus('panelStatus', 'El usuario no es docente. Rol actual: ' + user.role, 'error');
+                return;
+            }
+            
+            showStatus('panelStatus', 'Redirigiendo al panel docente...', 'info');
+            setTimeout(() => {
+                window.location.href = 'teacher-panel.html';
+            }, 1000);
+        }
+        
+        function clearData() {
+            localStorage.removeItem('user');
+            showStatus('clearStatus', 'localStorage limpiado', 'success');
+            checkUser();
+        }
+        
+        // Verificar usuario al cargar la página
+        window.onload = function() {
+            checkUser();
+        };
+    </script>
+</body>
+</html>

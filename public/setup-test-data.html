@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup - Datos de Prueba</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card: #2c3e50;
+            --border: #34495e;
+            --text: #ecf0f1;
+            --muted: #bdc3c7;
+            --blue: #3498db;
+            --green: #27ae60;
+            --red: #e74c3c;
+            --yellow: #f39c12;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 300;
+            font-size: 2em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .card h2 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .card p {
+            color: var(--muted);
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            color: white;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.85;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-blue {
+            background: var(--blue);
+        }
+
+        .btn-red {
+            background: var(--red);
+        }
+
+        .btn-green {
+            background: var(--green);
+        }
+
+        .log {
+            margin-top: 15px;
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 0.85em;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .log .ok {
+            color: #4CAF50;
+        }
+
+        .log .err {
+            color: #ff6b6b;
+        }
+
+        .log .info {
+            color: #64b5f6;
+        }
+
+        .log .warn {
+            color: #ffd54f;
+        }
+
+        a.back {
+            display: inline-block;
+            color: var(--blue);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        a.back:hover {
+            text-decoration: underline;
+        }
+
+        .credentials {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .credentials span {
+            color: var(--yellow);
+        }
+    </style>
+</head>
+
+<body>
+    <a href="teacher-panel.html" class="back">← Volver al Panel</a>
+    <h1>🔧 Setup — Datos de Prueba</h1>
+
+    <div class="grid">
+        <!-- Card 1: Crear docente -->
+        <div class="card">
+            <h2>👨‍🏫 Crear Docente de Prueba</h2>
+            <div class="credentials">
+                Usuario: <span>docente_prueba</span><br>
+                Contraseña: <span>prueba123</span>
+            </div>
+            <p>Crea un usuario docente en Firebase Auth y Firestore con las credenciales de arriba.</p>
+            <button class="btn btn-blue" id="btnCreateTeacher" onclick="createTestTeacher()">Crear Docente</button>
+            <div class="log" id="logTeacher"></div>
+        </div>
+
+        <!-- Card 2: Vincular preguntas -->
+        <div class="card">
+            <h2>🔗 Vincular Preguntas</h2>
+            <p>Asigna todas las preguntas existentes en Firebase al docente de prueba (agrega <code>teacherId</code>).
+            </p>
+            <button class="btn btn-green" id="btnLinkQuestions" onclick="linkQuestionsToTeacher()">Vincular
+                Preguntas</button>
+            <div class="log" id="logQuestions"></div>
+        </div>
+
+        <!-- Card 3: Limpiar BD -->
+        <div class="card">
+            <h2>🗑️ Limpiar BD</h2>
+            <p>Elimina todos los documentos de las colecciones <code>users</code> y <code>scores</code>.
+                <strong>Irreversible.</strong></p>
+            <button class="btn btn-red" id="btnCleanDB" onclick="cleanDatabase()">Limpiar users + scores</button>
+            <div class="log" id="logClean"></div>
+        </div>
+
+        <!-- Card 4: Crear categorías por defecto -->
+        <div class="card">
+            <h2>📂 Crear Categorías</h2>
+            <p>Crea las categorías por defecto en la colección <code>categories</code> para que estén disponibles en el
+                panel docente.</p>
+            <button class="btn btn-blue" id="btnCategories" onclick="createDefaultCategories()">Crear
+                Categorías</button>
+            <div class="log" id="logCategories"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import {
+            getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query, getDoc, addDoc
+        } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+        import {
+            getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword
+        } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2LACkwgSgpO3ee-4BO-UYuKHLdNmt-Xk",
+            authDomain: "practicas-comunitarias-a63ba.firebaseapp.com",
+            projectId: "practicas-comunitarias-a63ba",
+            storageBucket: "practicas-comunitarias-a63ba.firebasestorage.app",
+            messagingSenderId: "788502250286",
+            appId: "1:788502250286:web:eba1b87f6cea11647330bf",
+            measurementId: "G-D0QN0BW178"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const TEST_EMAIL = "docente_prueba@runapachawan.com";
+        const TEST_PASS = "prueba123";
+        const TEST_NAME = "Docente de Prueba";
+
+        function log(containerId, msg, type = 'info') {
+            const el = document.getElementById(containerId);
+            const cls = type === 'ok' ? 'ok' : type === 'err' ? 'err' : type === 'warn' ? 'warn' : 'info';
+            el.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        // ─── 1. Crear docente de prueba ───
+        window.createTestTeacher = async function () {
+            const btn = document.getElementById('btnCreateTeacher');
+            btn.disabled = true;
+            const L = 'logTeacher';
+
+            try {
+                log(L, '🔄 Intentando crear usuario en Firebase Auth...');
+                let uid;
+                try {
+                    const cred = await createUserWithEmailAndPassword(auth, TEST_EMAIL, TEST_PASS);
+                    uid = cred.user.uid;
+                    log(L, `✅ Usuario Auth creado: ${uid}`, 'ok');
+                } catch (e) {
+                    if (e.code === 'auth/email-already-in-use') {
+                        log(L, '⚠️ El usuario ya existe en Auth. Intentando login...', 'warn');
+                        const cred = await signInWithEmailAndPassword(auth, TEST_EMAIL, TEST_PASS);
+                        uid = cred.user.uid;
+                        log(L, `✅ Login exitoso: ${uid}`, 'ok');
+                    } else throw e;
+                }
+
+                log(L, '🔄 Creando documento en Firestore /users/...');
+                await setDoc(doc(db, 'users', uid), {
+                    uid,
+                    email: TEST_EMAIL,
+                    displayName: TEST_NAME,
+                    role: 'teacher',
+                    isActive: true,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                });
+                log(L, `✅ Documento Firestore creado con role: teacher`, 'ok');
+
+                // Guardar en localStorage para uso inmediato
+                localStorage.setItem('qc_user', JSON.stringify({
+                    uid, email: TEST_EMAIL, displayName: TEST_NAME, role: 'teacher'
+                }));
+                log(L, `✅ Guardado en localStorage`, 'ok');
+                log(L, `\n🎉 ¡Docente de prueba listo! UID: ${uid}`, 'ok');
+
+                // Guardar UID globalmente para vincular preguntas
+                window._testTeacherUid = uid;
+            } catch (err) {
+                log(L, `❌ Error: ${err.message}`, 'err');
+            }
+            btn.disabled = false;
+        };
+
+        // ─── 2. Vincular preguntas al docente ───
+        window.linkQuestionsToTeacher = async function () {
+            const btn = document.getElementById('btnLinkQuestions');
+            btn.disabled = true;
+            const L = 'logQuestions';
+
+            try {
+                // Obtener UID del docente
+                let uid = window._testTeacherUid;
+                if (!uid) {
+                    log(L, '🔄 Buscando docente de prueba en Firestore...');
+                    const snap = await getDocs(query(collection(db, 'users')));
+                    for (const d of snap.docs) {
+                        if (d.data().email === TEST_EMAIL) { uid = d.id; break; }
+                    }
+                }
+                if (!uid) {
+                    log(L, '❌ Primero crea el docente de prueba', 'err');
+                    btn.disabled = false;
+                    return;
+                }
+                log(L, `📌 UID del docente: ${uid}`, 'info');
+
+                // Leer todas las preguntas
+                const questionsSnap = await getDocs(collection(db, 'questions'));
+                log(L, `📊 Preguntas encontradas: ${questionsSnap.size}`);
+
+                let updated = 0;
+                for (const qDoc of questionsSnap.docs) {
+                    await updateDoc(doc(db, 'questions', qDoc.id), {
+                        teacherId: uid,
+                        teacherName: TEST_NAME,
+                        activa: true
+                    });
+                    updated++;
+                    log(L, `  ✅ ${updated}/${questionsSnap.size} — ${qDoc.data().enunciado?.substring(0, 50)}...`, 'ok');
+                }
+
+                log(L, `\n🎉 ${updated} preguntas vinculadas al docente`, 'ok');
+            } catch (err) {
+                log(L, `❌ Error: ${err.message}`, 'err');
+            }
+            btn.disabled = false;
+        };
+
+        // ─── 3. Limpiar BD ───
+        window.cleanDatabase = async function () {
+            if (!confirm('⚠️ Esto eliminará TODOS los usuarios y scores. ¿Continuar?')) return;
+
+            const btn = document.getElementById('btnCleanDB');
+            btn.disabled = true;
+            const L = 'logClean';
+
+            try {
+                // Limpiar users
+                log(L, '🔄 Eliminando colección users...');
+                const usersSnap = await getDocs(collection(db, 'users'));
+                let count = 0;
+                for (const d of usersSnap.docs) {
+                    await deleteDoc(doc(db, 'users', d.id));
+                    count++;
+                }
+                log(L, `✅ ${count} usuarios eliminados`, 'ok');
+
+                // Limpiar scores
+                log(L, '🔄 Eliminando colección scores...');
+                const scoresSnap = await getDocs(collection(db, 'scores'));
+                count = 0;
+                for (const d of scoresSnap.docs) {
+                    await deleteDoc(doc(db, 'scores', d.id));
+                    count++;
+                }
+                log(L, `✅ ${count} scores eliminados`, 'ok');
+
+                // Limpiar localStorage
+                localStorage.removeItem('qc_user');
+                localStorage.removeItem('selectedCourseId');
+                log(L, '✅ localStorage limpio', 'ok');
+                log(L, '\n🎉 ¡BD limpia! Ahora crea el docente de prueba.', 'ok');
+            } catch (err) {
+                log(L, `❌ Error: ${err.message}`, 'err');
+            }
+            btn.disabled = false;
+        };
+
+        // ─── 4. Crear categorías por defecto ───
+        window.createDefaultCategories = async function () {
+            const btn = document.getElementById('btnCategories');
+            btn.disabled = true;
+            const L = 'logCategories';
+
+            const defaults = [
+                { id: 'ciencias', nombre: 'Ciencias', color: '#2E7D32', icono: '🔬', orden: 1 },
+                { id: 'matematicas', nombre: 'Matemáticas', color: '#1565C0', icono: '🔢', orden: 2 },
+                { id: 'lenguaje', nombre: 'Lenguaje', color: '#6A1B9A', icono: '📖', orden: 3 },
+                { id: 'historia', nombre: 'Historia', color: '#B71C1C', icono: '🏛️', orden: 4 },
+                { id: 'runas', nombre: 'Runas', color: '#FF6F00', icono: '✨', orden: 5 }
+            ];
+
+            try {
+                for (const cat of defaults) {
+                    await setDoc(doc(db, 'categories', cat.id), {
+                        ...cat,
+                        activa: true,
+                        editable: true,
+                        createdAt: new Date().toISOString()
+                    });
+                    log(L, `✅ Categoría "${cat.nombre}" creada`, 'ok');
+                }
+                log(L, `\n🎉 ${defaults.length} categorías creadas`, 'ok');
+            } catch (err) {
+                log(L, `❌ Error: ${err.message}`, 'err');
+            }
+            btn.disabled = false;
+        };
+    </script>
+</body>
+
+</html>
