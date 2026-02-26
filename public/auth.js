@@ -329,12 +329,26 @@ window.authSignIn = async function (username, password) {
   const virtualEmail = username.includes("@") ? username : `${username.toLowerCase().trim()}@runapachawan.com`;
   if (!auth) throw new Error("Servicio de autenticación no disponible.");
   try {
+    console.log('🔐 Intentando login con:', virtualEmail);
     const cred = await signInWithEmailAndPassword(auth, virtualEmail, password);
     const u = cred.user;
+    console.log('✅ Usuario autenticado en Firebase Auth:', u.uid, u.email);
 
     // Obtener rol del usuario desde Firestore
+    console.log('🔍 Buscando documento del usuario en Firestore...');
     const userDoc = await getDoc(doc(db, "users", u.uid));
-    const userData = userDoc.exists() ? userDoc.data() : { role: 'student' };
+    
+    if (!userDoc.exists()) {
+      console.error('❌ ERROR CRÍTICO: Usuario no existe en Firestore - UID:', u.uid);
+      console.error('📊 Posibles causas:');
+      console.error('  1. El usuario fue creado en Auth pero no en Firestore');
+      console.error('  2. Las reglas de seguridad bloquean el acceso');
+      console.error('  3. Problema de sincronización entre Auth y Firestore');
+      throw new Error('❌ Usuario no encontrado en la base de datos. Contacta al administrador.');
+    }
+    
+    const userData = userDoc.data();
+    console.log('📋 Datos del usuario desde Firestore:', userData);
 
     const user = {
       uid: u.uid,
@@ -346,11 +360,33 @@ window.authSignIn = async function (username, password) {
 
     // Mostrar mensaje de bienvenida según rol
     const roleText = userData.role === 'teacher' ? 'Docente' : 'Estudiante';
-    console.log(`Bienvenido/a ${roleText}: ${username}`);
+    console.log(`🎉 Bienvenido/a ${roleText}: ${username}`);
 
     return user;
   } catch (err) {
-    console.error("Error en authSignIn:", err.code, err.message);
+    console.error('🔥 ERROR DETALLADO EN authSignIn:');
+    console.error('  Código:', err.code);
+    console.error('  Mensaje:', err.message);
+    console.error('  Usuario:', virtualEmail);
+    
+    // Diagnóstico específico por código de error
+    switch(err.code) {
+      case 'auth/user-not-found':
+        console.error('❌ El usuario no existe en Firebase Auth');
+        break;
+      case 'auth/wrong-password':
+        console.error('❌ Contraseña incorrecta');
+        break;
+      case 'auth/invalid-credential':
+        console.error('❌ Credenciales inválidas');
+        break;
+      case 'auth/network-request-failed':
+        console.error('❌ Error de red - verifica conexión');
+        break;
+      default:
+        console.error('❌ Error no categorizado:', err.code);
+    }
+    
     throw err;
   }
 };
@@ -360,20 +396,61 @@ window.authRegister = async function (name, username, password, role = 'student'
   if (!auth) throw new Error("Servicio de autenticación no disponible.");
   try {
     console.log('📝 Registrando usuario con rol:', role);
+    console.log('📧 Email virtual:', virtualEmail);
+    console.log('👤 Nombre:', name);
+    
     const cred = await createUserWithEmailAndPassword(auth, virtualEmail, password);
     const u = cred.user;
+    console.log('✅ Usuario creado en Firebase Auth:', u.uid);
+    
     const user = {
       uid: u.uid,
       email: virtualEmail,
       displayName: name || username,
       role: role
     };
-    console.log('✅ Usuario creado:', user);
+    console.log('👤 Datos del usuario a guardar:', user);
     lsSetUser(user);
+    
+    // Sincronizar con Firestore y verificar
+    console.log('🔄 Sincronizando con Firestore...');
     await syncUserToFirestore(u, role);
+    
+    // Verificación post-sincronización
+    console.log('🔍 Verificando que el usuario existe en Firestore...');
+    const verificationDoc = await getDoc(doc(db, "users", u.uid));
+    if (verificationDoc.exists()) {
+      console.log('✅ Verificación exitosa - Usuario existe en Firestore');
+    } else {
+      console.error('❌ ERROR: Usuario no se guardó en Firestore después del registro');
+    }
+    
     return user;
   } catch (err) {
-    console.error("Error en authRegister:", err.code, err.message);
+    console.error('🔥 ERROR DETALLADO EN authRegister:');
+    console.error('  Código:', err.code);
+    console.error('  Mensaje:', err.message);
+    console.error('  Email:', virtualEmail);
+    console.error('  Rol:', role);
+    
+    // Diagnóstico específico
+    switch(err.code) {
+      case 'auth/email-already-in-use':
+        console.error('❌ El email ya está registrado');
+        break;
+      case 'auth/weak-password':
+        console.error('❌ La contraseña es muy débil');
+        break;
+      case 'auth/invalid-email':
+        console.error('❌ Email inválido');
+        break;
+      case 'permission-denied':
+        console.error('❌ Error de permisos en Firestore - revisa las reglas de seguridad');
+        break;
+      default:
+        console.error('❌ Error no categorizado:', err.code);
+    }
+    
     throw err;
   }
 };
@@ -471,14 +548,18 @@ window.showAuth = showAuth;
 window.showMenu = showMenu;
 
 async function syncUserToFirestore(user, role = 'student') {
-  if (!user || !user.uid) return;
+  if (!user || !user.uid) {
+    console.error('❌ syncUserToFirestore: Usuario o UID inválido');
+    return;
+  }
   try {
+    console.log('🔄 syncUserToFirestore - UID:', user.uid, 'Role:', role);
     const userDocRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userDocRef);
 
-    // Si el usuario no existe, crear con rol por defecto
     if (!userDoc.exists()) {
-      await setDoc(userDocRef, {
+      console.log('📝 Creando nuevo documento en Firestore...');
+      const userData = {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName || user.email.split('@')[0],
@@ -488,16 +569,44 @@ async function syncUserToFirestore(user, role = 'student') {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         lastLogin: new Date().toISOString()
-      });
+      };
+      
+      console.log('📋 Datos a crear en Firestore:', userData);
+      await setDoc(userDocRef, userData);
+      console.log('✅ Usuario creado exitosamente en Firestore');
+      
+      // Verificación inmediata
+      const verifyDoc = await getDoc(userDocRef);
+      if (verifyDoc.exists()) {
+        console.log('✅ Verificación: Usuario existe en Firestore después de crear');
+      } else {
+        console.error('❌ ERROR: Usuario no existe después de crear - posible problema de reglas');
+      }
     } else {
-      // Actualizar último login
+      console.log('🔄 Actualizando usuario existente en Firestore...');
       await updateDoc(userDocRef, {
         lastLogin: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
+      console.log('✅ Usuario actualizado en Firestore');
     }
   } catch (e) {
-    console.warn("Error sincronizando usuario a Firestore:", e);
+    console.error('🔥 ERROR CRÍTICO en syncUserToFirestore:');
+    console.error('  Error:', e.code, e.message);
+    console.error('  UID:', user.uid);
+    console.error('  Posibles causas:');
+    console.error('    1. Reglas de seguridad de Firestore bloquean la escritura');
+    console.error('    2. El usuario no tiene permisos para este documento');
+    console.error('    3. Problema de conectividad con Firestore');
+    
+    // Intentar diagnóstico adicional
+    try {
+      console.log('🔍 Intentando leer el documento para diagnóstico...');
+      const testDoc = await getDoc(doc(db, "users", user.uid));
+      console.log('📖 Resultado de lectura de prueba:', testDoc.exists() ? 'EXISTS' : 'NOT EXISTS');
+    } catch (readErr) {
+      console.error('❌ Error al intentar leer para diagnóstico:', readErr.code, readErr.message);
+    }
   }
 }
 
