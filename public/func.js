@@ -71,9 +71,7 @@ ayllu.style.backgroundImage = "url('Resources/Totems/Ayllu_idle.png')";
 puma.style.backgroundImage = "url('Resources/Mobs/panther_idle.png')";
 
 // Variables del juego
-let introText = `En tiempos ancestrales, antes de que el tiempo se midiera y los pueblos tuvieran nombre,
-la tierra del actual Ecuador era habitada por culturas sabias y guerreras.
-Sus conocimientos se transmitían por generaciones... hasta hoy.`;
+let introText = "Bienvenido. Prepárate para una aventura de aprendizaje...";
 let currentChar = 0;
 let writingInterval = null;
 let playerX = 0;
@@ -93,62 +91,17 @@ let selectedOptionIndex = 0;
 let wisdomPoints = 0;
 let spanishEnemies = [];
 let projectiles = [];
+let currentQuizQuestion = null;
+let quizStartTime = null;
+let runaQuizActive = false;
+let runaSelectedIndex = 0;
+let runaQuizQuestion = null;
+let runaQuizHandler = null;
+let isQuizPaused = false;
 // --- Seguimiento de puntuación / métricas para envío ---
 let runasCollected = 0;
 let enemiesDefeated = 0;   // suma puma + jefes
 // (wisdomPoints ya existe; lo usamos como 'score')
-const quizQuestionText = "¿En qué año comenzó la invasión española al Tahuantinsuyo?";
-const quizOptions = [
-    "1492",
-    "1532", //correcta
-    "1822"
-];
-const runaQuizzes = {
-    4: {
-        question: "¿Quién fue el primer Inca del Tahuantinsuyo?",
-        options: ["Manco Cápac", "Atahualpa", "Rumiñahui"],
-        correct: 0,
-        narration: "Manco Cápac, según la leyenda, fue el primer Inca y fundador del Tahuantinsuyo, la gran civilización andina."
-    },
-    5: {
-        question: "¿Cuál fue la capital del Imperio Inca?",
-        options: ["Quito", "Cusco", "Cajamarca"],
-        correct: 1,
-        narration: "Cusco fue la capital del Imperio Inca, un centro político, militar y cultural de gran importancia."
-    },
-    6: {
-        question: "¿Qué líder indígena ecuatoriano resistió contra los españoles tras la muerte de Atahualpa?",
-        options: ["Huayna Cápac", "Rumiñahui", "Túpac Yupanqui"],
-        correct: 1,
-        narration: "Rumiñahui fue un líder indígena que resistió valientemente contra los conquistadores españoles tras la captura y ejecución de Atahualpa."
-    },
-
-    7: {
-        question: "¿Qué estrategia militar clave utilizó Francisco Pizarro en la captura de Atahualpa en Cajamarca?",
-        options: [
-            "Emboscada con caballería y armas de fuego",
-            "Asedio prolongado a la ciudad",
-            "Negociación diplomática con traductores"
-        ],
-        correct: 0,
-        narration: "El 16 de noviembre de 1532, Pizarro ejecutó una audaz emboscada en Cajamarca. Ocultó sus jinetes y soldados en los edificios alrededor de la plaza, "
-            + "mientras Atahualpa ingresaba con miles de seguidores desarmados. Tras el fallido intento de negociación del fraile Vicente de Valverde, "
-            + "los españoles cargaron con caballería y dispararon arcabuces causando pánico masivo. La superioridad tecnológica como las armas de acero y caballos junto con "
-            + "el factor sorpresa permitieron capturar al Inca en minutos, un evento que marcó el colapso del Tahuantinsuyo."
-    },
-
-    8: {
-        question: "Además del botín de oro y plata, ¿qué objetivo estratégico perseguían los españoles al conquistar el Imperio Inca?",
-        options: [
-            "Controlar las rutas de la llama",
-            "Desarticular el sistema de creencias inca",
-            "Establecer una ruta hacia el Amazonas"
-        ],
-        correct: 2,
-        narration: "Los españoles buscaban establecer rutas comerciales y de exploración hacia la región amazónica, además de obtener riquezas."
-    }
-};
-const correctAnswerIndex = 1;
 const audioTracks = {
     menu: new Audio('Resources/Music/Menu_m.mp3'),
     scene1: new Audio('Resources/Music/first.mp3'),
@@ -208,13 +161,15 @@ document.addEventListener('keyup', e => keysPressed[e.key] = false);
 
 function showRunaForScene() {
     // Oculta todas las runas
-    for (let i = 4; i <= 8; i++) {
+    for (let i = 1; i <= 8; i++) {
         const runa = document.getElementById(`runa${i}`);
         if (runa) runa.style.display = 'none';
     }
-    // Muestra solo la runa del nivel actual
-    const runaActual = document.getElementById(`runa${scene}`);
-    if (runaActual) runaActual.style.display = 'block';
+    // Muestra solo la runa del nivel actual (excepto nivel 1 que tiene totem)
+    if (scene >= 2) {
+        const runaActual = document.getElementById(`runa${scene}`);
+        if (runaActual) runaActual.style.display = 'block';
+    }
 }
 
 
@@ -227,7 +182,6 @@ function updatePositions() {
     updateCharacterPosition(player, playerX, playerY);
     if (scene === 1) {
         updateCharacterPosition(ayllu, aylluX, aylluY);
-        updateCharacterPosition(trigger, triggerX, triggerY);
 
     } else if (scene === 2) {
         updateCharacterPosition(puma, pumaX, pumaY);
@@ -407,96 +361,452 @@ function checkWallCollision() {
     return false;
 }
 
-function showRunaNarration(text, onFinish) {
+function showRunaNarration(text, onFinish, autoCloseMs = null) {
     const introScene = document.getElementById("introScene");
     const introText = document.getElementById("introText");
     const continuePrompt = document.getElementById("continuePrompt");
 
+    if (runaQuizActive) closeRunaQuiz();
+
+    isQuizPaused = true;
     introText.textContent = text;
     introScene.style.display = "flex";
-    continuePrompt.style.display = "block";
+    
+    // Asegurarse de que el z-index sea el más alto posible para que nada lo tape
+    introScene.style.zIndex = "30000";
+    console.log(`🎬 Mostrando narración: ${text.substring(0, 50)}...`);
+
+    const shouldAutoClose = typeof autoCloseMs === "number" && autoCloseMs > 0;
+    continuePrompt.style.display = shouldAutoClose ? "none" : "block";
+
+    let finished = false;
+    const finish = () => {
+        if (finished) return;
+        finished = true;
+        console.log('🎬 Cerrando narración, isQuizPaused antes:', isQuizPaused);
+        introScene.style.display = "none";
+        document.removeEventListener("keydown", handleKey);
+        if (typeof onFinish === "function") {
+            console.log('🎬 Ejecutando onFinish callback');
+            try {
+                onFinish();
+            } catch (err) {
+                console.error('🎬 Error en onFinish callback:', err);
+                isQuizPaused = false;
+            }
+        } else {
+            console.log('🎬 Sin onFinish, estableciendo isQuizPaused = false');
+            isQuizPaused = false;
+        }
+        console.log('🎬 isQuizPaused después:', isQuizPaused);
+    };
 
     function handleKey(e) {
-        if (e.key.toLowerCase() === "b") {
-            introScene.style.display = "none";
-            document.removeEventListener("keydown", handleKey);
-            if (typeof onFinish === "function") onFinish();
+        const key = e.key.toLowerCase();
+        if (key === "b" || key === "a" || key === "enter") {
+            finish();
         }
     }
 
     document.addEventListener("keydown", handleKey);
+    if (shouldAutoClose) {
+        setTimeout(finish, autoCloseMs);
+    }
 }
 
 
-function showRunaQuiz(runaId) {
-    const quiz = runaQuizzes[runaId];
-    if (!quiz) return;
+async function showRunaQuiz(runaId) {
+    try {
+        const selectedCourseId = localStorage.getItem('selectedCourseId');
+        let questions = [];
 
+        console.log(`🎮 Nivel ${scene}: cargando pregunta aleatoria para runa ${runaId}`);
+
+        if (selectedCourseId) {
+            console.log(`🎮 Cargando pregunta aleatoria del curso: ${selectedCourseId}`);
+            questions = await window.getRandomQuestions(1, selectedCourseId, null);
+            // Fallback a preguntas globales si el curso no tiene preguntas
+            if (questions.length === 0) {
+                console.log('🔄 Curso sin preguntas, intentando preguntas globales...');
+                questions = await window.getRandomQuestions(1, null, null);
+            }
+        } else {
+            console.log('🌍 Cargando pregunta aleatoria global...');
+            questions = await window.getRandomQuestions(1, null, null);
+        }
+
+        if (questions.length === 0) {
+            console.log('🔔 No se encontraron preguntas en la base de datos del docente');
+            showCenterMessage("No hay preguntas configuradas. Contacta al docente.", 3000);
+            isQuizPaused = false;
+            return;
+        }
+
+        processRunaQuestion(questions[0]);
+    } catch (error) {
+        console.error('Error cargando pregunta de runa:', error);
+        showCenterMessage("Error al cargar pregunta. Contacta al docente.", 3000);
+        isQuizPaused = false;
+    }
+}
+
+function processRunaQuestion(question) {
+    openRunaQuiz(question, (idx) => {
+        let message = "";
+        const isCorrect = idx === Number(question.correcta);
+
+        if (window.recordAnswer && window.getCurrentUser()) {
+            window.recordAnswer(question.id, idx, 0).catch(console.error);
+        }
+
+        if (isCorrect) {
+            const points = 10;
+            wisdomPoints += points;
+            updateWisdomBar();
+            message = `✅ ¡Correcto! +${points} Sabiduría`;
+            console.log('✅ Respuesta runa correcta, puntos:', points);
+        } else {
+            message = `❌ Respuesta incorrecta...`;
+            console.log('❌ Respuesta runa incorrecta');
+        }
+
+        showCenterMessage(message, 1500, isCorrect ? "correct" : "incorrect");
+
+        // Mantener la pausa durante todo el proceso
+        isQuizPaused = true;
+
+        setTimeout(() => {
+            const afterExplanation = () => {
+                if (scene === 8) {
+                    showFinalThanksAndReturnToMenu();
+                } else if (scene >= 4) {
+                    const nextSceneFn = window[`startScene${scene + 1}`];
+                    if (typeof nextSceneFn === "function") {
+                        nextSceneFn();
+                    } else {
+                        isQuizPaused = false;
+                    }
+                } else {
+                    console.log('🎮 Nivel < 4: Restableciendo isQuizPaused = false');
+                    isQuizPaused = false;
+                }
+            };
+
+            if (question.explicacion) {
+                showRunaNarration(question.explicacion, afterExplanation);
+            } else {
+                afterExplanation();
+            }
+        }, 1500);
+    });
+}
+
+async function showEnemyQuiz(enemyType) {
+    try {
+        const selectedCourseId = localStorage.getItem('selectedCourseId');
+        let questions = [];
+
+        console.log(`⚔️ Nivel ${scene}: cargando pregunta difícil para ${enemyType}`);
+
+        if (selectedCourseId) {
+            console.log(`⚔️ Cargando pregunta difícil del curso: ${selectedCourseId}`);
+            questions = await window.getRandomQuestions(1, selectedCourseId, null);
+            // Fallback a preguntas globales si el curso no tiene preguntas
+            if (questions.length === 0) {
+                console.log('🔄 Curso sin preguntas, intentando preguntas globales...');
+                questions = await window.getRandomQuestions(1, null, null);
+            }
+        } else {
+            console.log('⚔️ Cargando pregunta difícil global...');
+            questions = await window.getRandomQuestions(1, null, null);
+        }
+
+        if (questions.length === 0) {
+            console.log('🔔 No se encontraron preguntas para enemigo en la base de datos del docente');
+            showCenterMessage("No hay preguntas configuradas. Contacta al docente.", 3000);
+            isQuizPaused = false;
+            return;
+        }
+
+        processEnemyQuestion(questions[0], enemyType);
+    } catch (error) {
+        console.error('Error cargando pregunta de enemigo:', error);
+        showCenterMessage("Error al cargar pregunta. Contacta al docente.", 3000);
+        isQuizPaused = false;
+    }
+}
+
+function openEnemyQuiz(question, onAnswer) {
+    console.log(' openEnemyQuiz iniciado para:', question.enunciado?.substring(0, 30) + '...');
+    const container = document.getElementById("runa-quiz-container"); // Reutilizamos el contenedor
+    const questionElem = document.getElementById("runa-quiz-question");
+    const optionsElem = document.getElementById("runa-quiz-options");
+
+    if (!container || !questionElem || !optionsElem) {
+        console.error(' No se encontraron elementos del DOM para enemy quiz');
+        return;
+    }
+
+    optionsElem.innerHTML = "";
+    questionElem.textContent = question.enunciado;
+
+    question.opciones.forEach((opt, idx) => {
+        const li = document.createElement("li");
+        li.textContent = opt;
+        li.classList.add("runa-option");
+        // Deshabilitar clics del mouse - solo se responde con teclado (flechas + 'A')
+        li.style.pointerEvents = "none";
+        optionsElem.appendChild(li);
+    });
+
+    // Establecer variables para el control de enemy quiz ANTES de actualizar selección
+    runaQuizActive = true;
+    isQuizPaused = true;
+    runaQuizQuestion = question;
+    runaSelectedIndex = 0;
+    runaQuizHandler = onAnswer;
+
+    updateRunaQuizSelection();
+    container.style.display = "block";
+    container.classList.add("show");
+    console.log(' Enemy quiz activado, isQuizPaused:', isQuizPaused);
+}
+
+function processEnemyQuestion(question, enemyType) {
+    console.log(' processEnemyQuestion iniciado para:', enemyType);
+    openEnemyQuiz(question, (idx) => {
+        const correctIdx = Number(question.correcta);
+        console.log('🎯 Respuesta enemigo recibida:', idx, 'correcta:', correctIdx, 'esCorrecto:', idx === correctIdx);
+        let message = "";
+        const isCorrect = idx === correctIdx;
+
+        if (window.recordAnswer && window.getCurrentUser()) {
+            window.recordAnswer(question.id, idx, 0).catch(console.error);
+        }
+
+        if (isCorrect) {
+            const points = 15;
+            wisdomPoints += points;
+            updateWisdomBar();
+            message = `✅ ¡Correcto! +${points} Sabiduría (${enemyType} vencido)`;
+            console.log('✅ Respuesta correcta, sumando puntos:', points);
+        } else {
+            message = "❌ Respuesta incorrecta...";
+            console.log('❌ Respuesta incorrecta');
+        }
+
+        showCenterMessage(message, 1500, isCorrect ? "correct" : "incorrect");
+
+        // Mantener la pausa durante todo el proceso
+        isQuizPaused = true;
+        console.log('🎯 isQuizPaused establecido en true, esperando narración...');
+
+        setTimeout(() => {
+            console.log('🎯 Procesando post-respuesta enemigo...');
+            const afterExplanation = () => {
+                console.log(`🎯 Callback post-explicación ejecutado, scene actual: ${scene}`);
+                if (scene === 2) {
+                    console.log('🎯 Transición a nivel 3...');
+                    showDialogue("¡Pasando al siguiente nivel!");
+                    setTimeout(() => {
+                        hideDialogue();
+                        startScene3();
+                    }, 1500);
+                } else if (scene === 3) {
+                    showDialogue("¡Enemigo derrotado! Continúa tu viaje...");
+                    setTimeout(() => {
+                        hideDialogue();
+                        startScene4();
+                    }, 1500);
+                } else {
+                    console.log('🎯 Sin transición específica, restableciendo isQuizPaused');
+                    isQuizPaused = false;
+                }
+            };
+
+            if (question.explicacion) {
+                showRunaNarration(question.explicacion, afterExplanation);
+            } else {
+                afterExplanation();
+            }
+        }, 1500);
+    });
+}
+
+function openRunaQuiz(question, onAnswer) {
     const container = document.getElementById("runa-quiz-container");
     const questionElem = document.getElementById("runa-quiz-question");
     const optionsElem = document.getElementById("runa-quiz-options");
 
-    optionsElem.innerHTML = "";
-    questionElem.textContent = quiz.question;
+    runaQuizActive = true;
+    isQuizPaused = true;
+    runaQuizQuestion = question;
+    runaSelectedIndex = 0;
+    runaQuizHandler = onAnswer;
 
-    quiz.options.forEach((opt, idx) => {
+    optionsElem.innerHTML = "";
+    questionElem.textContent = question.enunciado;
+
+    question.opciones.forEach((opt, idx) => {
         const li = document.createElement("li");
         li.textContent = opt;
         li.classList.add("runa-option");
-        li.onclick = () => {
-            container.style.display = "none";
-            let message = "";
-
-            if (idx === quiz.correct) {
-                wisdomPoints += 10;
-                updateWisdomBar();
-                message = "¡Correcto! +10 Sabiduría";
-            } else {
-                message = "Respuesta incorrecta...";
-            }
-
-            showCenterMessage(message, 2000);
-
-            // mostrar narración obligatoria antes de cambiar escena
-            setTimeout(() => {
-                showRunaNarration(
-                    quiz.narration || "Un fragmento de sabiduría ancestral se revela...",
-                    () => {
-                        if (scene === 8) {
-                            showFinalThanksAndReturnToMenu();
-                        } else {
-                            const nextSceneFn = window[`startScene${scene + 1}`];
-                            if (typeof nextSceneFn === "function") nextSceneFn();
-                        }
-                    }
-                );
-            }, 2200);
-        };
+        // Deshabilitar clics del mouse - solo se responde con teclado (flechas + 'A')
+        li.style.pointerEvents = "none";
         optionsElem.appendChild(li);
     });
 
-    container.style.display = "flex";
+    updateRunaQuizSelection();
+    container.style.display = "block";
+    container.classList.add("show");
+}
+
+function closeRunaQuiz() {
+    const container = document.getElementById("runa-quiz-container");
+    if (container) {
+        container.style.display = "none";
+        container.classList.remove("show");
+    }
+    runaQuizActive = false;
+    runaQuizQuestion = null;
+    runaQuizHandler = null;
+    runaSelectedIndex = 0;
+    // NO desactivar isQuizPaused aquí, dejar que el flujo de la pregunta (callback) lo maneje
+}
+
+// Fallback de seguridad para asegurar que el juego no se quede congelado
+// Usa un contador acumulativo: solo actúa después de 15s de estado "atascado" continuo
+let watchdogStuckSince = 0;
+setInterval(() => {
+    if (runaQuizActive === false && isQuizPaused === true && !gameOverActive && !isGamePaused) {
+        if (watchdogStuckSince === 0) {
+            watchdogStuckSince = Date.now();
+        } else if (Date.now() - watchdogStuckSince > 15000) {
+            console.warn('🚨 Detectado juego congelado (>15s), restableciendo isQuizPaused');
+            isQuizPaused = false;
+            const introScene = document.getElementById("introScene");
+            if (introScene && introScene.style.display !== "none") {
+                console.warn('🚨 Ocultando overlay de narración huérfano');
+                introScene.style.display = "none";
+            }
+            watchdogStuckSince = 0;
+        }
+    } else {
+        watchdogStuckSince = 0;
+    }
+}, 2000);
+
+function updateRunaQuizSelection() {
+    const optionElements = document.querySelectorAll("#runa-quiz-options .runa-option");
+    optionElements.forEach((el, index) => {
+        el.classList.toggle("selected", index === runaSelectedIndex);
+    });
+}
+
+// Navegación por teclado para quiz de runas y enemigos
+document.addEventListener("keydown", (e) => {
+    if (!runaQuizActive || !runaQuizQuestion) return;
+
+    if (e.key === "ArrowUp") {
+        runaSelectedIndex = (runaSelectedIndex - 1 + runaQuizQuestion.opciones.length) % runaQuizQuestion.opciones.length;
+        updateRunaQuizSelection();
+        e.preventDefault();
+    }
+    if (e.key === "ArrowDown") {
+        runaSelectedIndex = (runaSelectedIndex + 1) % runaQuizQuestion.opciones.length;
+        updateRunaQuizSelection();
+        e.preventDefault();
+    }
+    if (e.key.toLowerCase() === "a") {
+        handleRunaQuizSelection(runaSelectedIndex);
+        e.preventDefault();
+    }
+});
+
+function handleRunaQuizSelection(idx) {
+    if (!runaQuizActive || !runaQuizQuestion || typeof runaQuizHandler !== "function") return;
+
+    const correctIdx = Number(runaQuizQuestion.correcta);
+    const isCorrect = idx === correctIdx;
+    const options = document.querySelectorAll("#runa-quiz-options .runa-option");
+
+    // Highlight selected answer green (correct) or red (incorrect)
+    if (options[idx]) {
+        options[idx].classList.remove("selected");
+        options[idx].classList.add(isCorrect ? "correct" : "incorrect");
+    }
+    // Always show the correct answer in green
+    if (!isCorrect && options[correctIdx]) {
+        options[correctIdx].classList.add("correct");
+    }
+
+    // Save handler and prevent re-entry (null handler fails the guard check above)
+    const handler = runaQuizHandler;
+    runaQuizHandler = null;
+    // Keep runaQuizActive = true so watchdog doesn't unpause the game during feedback
+
+    // Wait to let user see the feedback, then close and proceed
+    setTimeout(() => {
+        closeRunaQuiz();
+        handler(idx);
+    }, 1200);
 }
 
 
+let nearRuna = false;
+let runaNearId = null;
+let nearNPC = false;
+
+// Sistema de hints de proximidad (sin timers, sin parpadeo)
+let currentProximityHint = null;
+
+function showProximityHint(text) {
+    const messageBox = document.getElementById("centerMessage");
+    const messageText = document.getElementById("centerMessageText");
+    if (!messageBox || !messageText) return;
+    if (currentProximityHint === text) return; // ya visible, no redibujar
+    currentProximityHint = text;
+    messageText.textContent = text;
+    messageBox.style.display = "block";
+    messageBox.style.zIndex = "30001";
+    messageBox.classList.remove("msg-correct", "msg-incorrect", "msg-neutral");
+    messageBox.classList.add("msg-neutral");
+}
+
+function hideProximityHint() {
+    if (currentProximityHint === null) return; // ya oculto
+    currentProximityHint = null;
+    const messageBox = document.getElementById("centerMessage");
+    if (messageBox) {
+        messageBox.style.display = "none";
+        messageBox.classList.remove("msg-correct", "msg-incorrect", "msg-neutral");
+    }
+}
+
 function checkRunaCollection() {
-    if (scene >= 4) {
+    // No hay runas en nivel 1 (solo totem con pregunta)
+    if (scene >= 2) {
         const runaId = `runa${scene}`;
         const runa = document.getElementById(runaId);
         if (runa && runa.style.display !== 'none') {
             const playerRect = player.getBoundingClientRect();
             const runaRect = runa.getBoundingClientRect();
-            const overlap = !(
-                playerRect.right < runaRect.left ||
-                playerRect.left > runaRect.right ||
-                playerRect.bottom < runaRect.top ||
-                playerRect.top > runaRect.bottom
+
+            const isColliding = !(
+                playerRect.right < runaRect.left + 20 ||
+                playerRect.left > runaRect.right - 20 ||
+                playerRect.bottom < runaRect.top + 20 ||
+                playerRect.top > runaRect.bottom - 20
             );
-            if (overlap) {
-                runa.style.display = 'none';
-                runasCollected += 1;
-                // CORREGIDO: usar scene como runaId
-                showRunaQuiz(scene);
+
+            if (isColliding) {
+                nearRuna = true;
+                runaNearId = scene;
+                showProximityHint("Presiona B para activar runa");
+            } else {
+                if (nearRuna) hideProximityHint();
+                nearRuna = false;
+                runaNearId = null;
             }
         }
     }
@@ -555,6 +865,14 @@ function checkFeatherCollision() {
 }
 
 function checkNPCInteraction() {
+    if (scene !== 1 || talkedToNPC) {
+        if (nearNPC) {
+            hideProximityHint();
+            nearNPC = false;
+        }
+        return;
+    }
+
     const playerRect = player.getBoundingClientRect();
     const npcRect = ayllu.getBoundingClientRect();
 
@@ -563,22 +881,36 @@ function checkNPCInteraction() {
         playerRect.bottom < npcRect.top - 20 ||
         playerRect.top > npcRect.bottom + 20);
 
-    if (near && keysPressed['b'] && !talkedToNPC) {
-        showQuiz();
-        talkedToNPC = true;
-        setTimeout(hideDialogue, 3000);
+    if (near) {
+        if (!nearNPC) {
+            nearNPC = true;
+            showProximityHint("Presiona B para hablar");
+        }
+    } else {
+        if (nearNPC) {
+            hideProximityHint();
+            nearNPC = false;
+        }
     }
 }
 
-function showCenterMessage(text, duration = 2000) {
+function showCenterMessage(text, duration = 2000, type = "neutral") {
+    console.log(`📣 Mensaje central: ${text}`);
+    currentProximityHint = null; // Limpiar estado de hint para evitar conflicto
     const messageBox = document.getElementById("centerMessage");
     const messageText = document.getElementById("centerMessageText");
 
     messageText.textContent = text;
     messageBox.style.display = "block";
+    messageBox.style.zIndex = "30001"; // Asegurar que esté por encima de todo
+
+    // Limpiar clases anteriores y aplicar tipo
+    messageBox.classList.remove("msg-correct", "msg-incorrect", "msg-neutral");
+    messageBox.classList.add(`msg-${type}`);
 
     setTimeout(() => {
         messageBox.style.display = "none";
+        messageBox.classList.remove("msg-correct", "msg-incorrect", "msg-neutral");
     }, duration);
 }
 
@@ -619,9 +951,8 @@ function updateLifeBar() {
 }
 
 function updateWisdomBar() {
-    const wisdomBar = document.getElementById('wisdom-bar');
-    if (wisdomBar) wisdomBar.style.display = 'block';
-    document.getElementById('wisdom-points').textContent = wisdomPoints;
+    const wisdomPointsEl = document.getElementById('wisdom-points');
+    if (wisdomPointsEl) wisdomPointsEl.textContent = wisdomPoints;
 }
 
 function updateEagleLifeBar() {
@@ -650,7 +981,7 @@ function updateEagleLifeBar() {
     if (eagleLives <= 0) {
         eagle.style.display = "none";
         document.getElementById('eagle-life-bar').style.display = "none";
-        showDialogue("¡Has derrotado al Águila!");
+        showDialogue("¡Enemigo derrotado!");
     }
 }
 
@@ -725,10 +1056,14 @@ function showGameOver() {
     // Mostrar resumen y guardar automáticamente
     if (typeof window.showGameSummary === 'function') {
         setTimeout(() => {
+            gameOverScreen.style.display = 'none';
+            overlay.style.background = "transparent";
             window.showGameSummary(finalGameData);
         }, 1500); // Dar un poco de tiempo para ver el mensaje de Game Over
     } else {
         setTimeout(() => {
+            gameOverScreen.style.display = 'none';
+            overlay.style.background = "transparent";
             window.showMenu();
         }, 1500);
     }
@@ -740,6 +1075,13 @@ function resetGameState() {
     // Reiniciar estados lógicos
     gameOverActive = false;
     isGamePaused = false;
+    isQuizPaused = false;
+    quizActive = false;
+    runaQuizActive = false;
+    runaQuizQuestion = null;
+    runaQuizHandler = null;
+    currentQuizQuestion = null;
+    quizStartTime = null;
     scene = 0;
     playerLives = 4;
     wisdomPoints = 0;
@@ -751,6 +1093,10 @@ function resetGameState() {
     isJumping = false;
     isAttacking = false;
     talkedToNPC = false;
+    nearNPC = false;
+    nearRuna = false;
+    runaNearId = null;
+    currentProximityHint = null;
     pumaDefeated = false;
     pumaLives = 6;
     eagleDefeated = false;
@@ -765,6 +1111,12 @@ function resetGameState() {
     document.getElementById('restartButton').style.display = 'none';
     document.getElementById('gameTitle').textContent = "RUNA PACHAWAN";
     document.getElementById('playButton').textContent = "Iniciar Aventura";
+
+    // Ocultar contenedores de quiz que pudieran quedar abiertos
+    const quizContainer = document.getElementById('quiz-container');
+    if (quizContainer) { quizContainer.style.display = 'none'; quizContainer.classList.remove('show'); }
+    const runaQuizContainer = document.getElementById('runa-quiz-container');
+    if (runaQuizContainer) { runaQuizContainer.style.display = 'none'; runaQuizContainer.classList.remove('show'); }
 
     // Limpiar proyectiles y enemigos
     feathers.forEach(f => f.element.remove());
@@ -797,6 +1149,7 @@ function resetGameState() {
     // Ocultar enemigos de escenas
     if (document.getElementById('puma')) document.getElementById('puma').style.display = 'none';
     if (document.getElementById('eagleBoss')) document.getElementById('eagleBoss').style.display = 'none';
+    document.getElementById('eagle-life-bar').style.display = 'none';
 
     // Ocultar jugador y HUD inicialmente (se mostrarán al pulsar "Play")
     const playerEl = document.getElementById('player');
@@ -899,7 +1252,7 @@ function movePlayer() {
 
 
 function movePuma() {
-    if (pumaDefeated) return;
+    if (pumaDefeated || !puma || isQuizPaused) return;
 
     const pumaRect = puma.getBoundingClientRect();
     const walls = document.querySelectorAll('.blocker-wall, .blocker');
@@ -1018,10 +1371,7 @@ function createFeather(x, y, direction) {
         if (hit && playerLives > 0 && !playerRecentlyHit) {
             feather.remove();
             clearInterval(interval);
-            playerLives--;
-            updateLifeBar();
-            playerRecentlyHit = true;
-            setTimeout(() => { playerRecentlyHit = false; }, 1000);
+            applyDamageToPlayer();
         }
 
         // Eliminar si ya salió de pantalla
@@ -1036,17 +1386,17 @@ function createFeather(x, y, direction) {
 
 function moveEagleBoss() {
     const eagle = document.getElementById('eagle');
+    
+    // Si el quiz está activo, pausar lógica de movimiento/ataque
+    if (isQuizPaused) return;
+
     // Verificar si el águila ha sido derrotada
     if (eagleLives <= 0 && scene === 3) {
-        if (!eagleDefeated) { // solo ocurre una vez
+        if (!eagleDefeated) {
             eagleDefeated = true;
             eagle.style.display = 'none';
             document.getElementById('eagle-life-bar').style.display = 'none';
-            showDialogue("¡Has derrotado al Águila!");
-            setTimeout(() => {
-                hideDialogue();
-                startScene4();
-            }, 3500);
+            // La transición a escena 4 se maneja via showEnemyQuiz → processEnemyQuestion
         }
         return;
     }
@@ -1109,11 +1459,8 @@ function moveEagleBoss() {
                 eagleRect.top > playerRect.bottom
             );
             if (eagleHitsPlayer && !playerRecentlyHit && !eagleDiveHasHit) {
-                playerLives--;
-                updateLifeBar();
-                playerRecentlyHit = true;
+                applyDamageToPlayer();
                 eagleDiveHasHit = true;
-                setTimeout(() => { playerRecentlyHit = false; }, 1000);
             }
             // Cuando termina la embestida
             if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
@@ -1209,7 +1556,12 @@ function checkEagleHit() {
             eagle.style.display = "none";
             // dentro del bloque donde confirmas derrota del águila:
             enemiesDefeated += 1;
-            showDialogue("¡Has derrotado al Águila!");
+            showDialogue("¡Enemigo derrotado!");
+
+            // Mostrar pregunta de enemigo (15 puntos)
+            setTimeout(() => {
+                showEnemyQuiz("Águila");
+            }, 2000);
         }
     }
 }
@@ -1305,7 +1657,7 @@ function handlePlayerAttack() {
 
 
 function checkPlayerAttackHitsEnemy() {
-    if (!isAttacking || scene !== 2 || !canDamagepuma || pumaDefeated) return;
+    if (!isAttacking || scene !== 2 || !canDamagepuma || pumaDefeated || !puma) return;
 
     const playerRect = player.getBoundingClientRect();
     const pumaRect = puma.getBoundingClientRect();
@@ -1345,15 +1697,12 @@ function checkPlayerAttackHitsEnemy() {
             // dentro del bloque de derrota del puma:
             enemiesDefeated += 1;
 
-            showDialogue("¡Has vencido al enemigo!");
+            showDialogue("¡Enemigo derrotado!");
 
-            // Transición directa a escena 3
+            // Mostrar pregunta de enemigo (15 puntos)
             setTimeout(() => {
-                showDialogue("¡Prepárate para el combate final!");
-                setTimeout(() => {
-                    hideDialogue();
-                    startScene3();
-                }, 3000);
+                console.log('🐆 Llamando showEnemyQuiz("Puma") desde derrota del puma');
+                showEnemyQuiz("Puma");
             }, 2000);
         } else {
             setTimeout(() => {
@@ -1377,15 +1726,14 @@ function checkQuicksandCollision() {
         playerRect.top > quicksandRect.bottom
     );
 
-    // Solo aplicar daño si el jugador tiene vidas
+    // Aplicar daño gradual si el jugador está en la arena movediza
     if (overlap && playerLives > 0) {
-        playerLives = 0;
-        updateLifeBar();
+        applyDamageToPlayer();
     }
 }
 
 function checkTriggerCollision() {
-    if (playerX > triggerX && !transitioning && talkedToNPC) {
+    if (playerX >= stageWidth - playerWidth - 10 && !transitioning && talkedToNPC) {
         transitioning = true;
         showDialogue("Pasando a la siguiente zona...");
         setTimeout(() => {
@@ -1421,6 +1769,7 @@ function spawnProjectile(enemy) {
 
 
 function updateProjectiles() {
+    if (isQuizPaused) return;
     for (let i = projectiles.length - 1; i >= 0; i--) {
         let proj = projectiles[i];
         proj.x += proj.speed;
@@ -1452,6 +1801,7 @@ function updateProjectiles() {
 }
 
 function updateSpanishEnemies() {
+    if (isQuizPaused) return;
     spanishEnemies.forEach(enemy => {
         const enemyRect = enemy.getBoundingClientRect();
         const enemyCenterX = enemyRect.left + enemyRect.width / 2;
@@ -1554,6 +1904,7 @@ function startIntroScene() {
 }
 
 function startScene2() {
+    isQuizPaused = false; // Asegurar que el juego se despause al iniciar la escena
     playSceneMusic('scene2');
     hideDialogue();
     scene = 2;
@@ -1583,9 +1934,11 @@ function startScene2() {
 
     updateCharacterPosition(player, playerX, playerY);
     updateCharacterPosition(puma, pumaX, pumaY);
+    showRunaForScene();
 }
 
 function startScene3() {
+    isQuizPaused = false;
     playSceneMusic('scene3');
     hideDialogue();
     scene = 3;
@@ -1618,6 +1971,7 @@ function startScene3() {
     playerX = 100;
     playerY = groundLevel + 5;
     updateCharacterPosition(player, playerX, playerY);
+    showRunaForScene();
 
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/castle_floor.png')";
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background2.png')";
@@ -1631,6 +1985,7 @@ function startScene3() {
 }
 
 function startScene4() {
+    isQuizPaused = false;
     playSceneMusic('scene4');
     hideDialogue();
     scene = 4;
@@ -1643,6 +1998,7 @@ function startScene4() {
     document.querySelector('.platforms-scene-2').style.display = 'none';
     document.querySelector('.platforms-scene-1').style.display = 'none';
     document.getElementById('eagleBoss').style.display = 'none';
+    document.getElementById('eagle-life-bar').style.display = 'none';
 
     // Fondo opcional
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background3_5.png')";
@@ -1659,6 +2015,7 @@ function startScene4() {
 }
 
 function startScene5() {
+    isQuizPaused = false;
     playSceneMusic('scene5');
     hideDialogue();
     scene = 5;
@@ -1672,6 +2029,7 @@ function startScene5() {
     document.querySelector('.platforms-scene-2').style.display = 'none';
     document.querySelector('.platforms-scene-1').style.display = 'none';
     document.getElementById('eagleBoss').style.display = 'none';
+    document.getElementById('eagle-life-bar').style.display = 'none';
 
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background3_5.png')";
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/forest_floor.png')";
@@ -1685,6 +2043,7 @@ function startScene5() {
 }
 
 function startScene6() {
+    isQuizPaused = false;
     playSceneMusic('scene6');
     hideDialogue();
     scene = 6;
@@ -1699,6 +2058,7 @@ function startScene6() {
     document.querySelector('.platforms-scene-2').style.display = 'none';
     document.querySelector('.platforms-scene-1').style.display = 'none';
     document.getElementById('eagleBoss').style.display = 'none';
+    document.getElementById('eagle-life-bar').style.display = 'none';
 
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/sand_floor.png')";
@@ -1721,6 +2081,7 @@ function startScene6() {
 }
 
 function startScene7() {
+    isQuizPaused = false;
     playSceneMusic('scene7');
     hideDialogue();
     scene = 7;
@@ -1733,6 +2094,7 @@ function startScene7() {
     document.querySelector('.platforms-scene-3').style.display = 'none';
     document.querySelector('.platforms-scene-2').style.display = 'none';
     document.querySelector('.platforms-scene-1').style.display = 'none';
+    document.getElementById('eagle-life-bar').style.display = 'none';
 
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background4.png')";
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/sand_floor.png')";
@@ -1755,6 +2117,7 @@ function startScene7() {
 }
 
 function startScene8() {
+    isQuizPaused = false;
     playSceneMusic('scene8');
     hideDialogue();
     scene = 8;
@@ -1768,6 +2131,7 @@ function startScene8() {
     document.querySelector('.platforms-scene-3').style.display = 'none';
     document.querySelector('.platforms-scene-2').style.display = 'none';
     document.querySelector('.platforms-scene-1').style.display = 'none';
+    document.getElementById('eagle-life-bar').style.display = 'none';
 
     document.getElementById("background").style.backgroundImage = "url('Resources/Backgrounds/Background_8.png')";
     document.getElementById('floor').style.backgroundImage = "url('Resources/Backgrounds/castle_floor.png')";
@@ -1783,7 +2147,7 @@ function startScene8() {
 
 function gameLoop() {
     gameLoopRunning = true;
-    if (gameOverActive || isGamePaused) {
+    if (gameOverActive || isGamePaused || isQuizPaused) {
         requestAnimationFrame(gameLoop);
         return;
     }
@@ -1792,14 +2156,17 @@ function gameLoop() {
 
     if (scene === 1) {
         checkTriggerCollision();
+        checkRunaCollection();
     } else if (scene === 2) {
         movePuma();
         checkPlayerAttackHitsEnemy();
+        checkRunaCollection();
     } else if (scene === 3) {
         moveEagleBoss();
         checkEagleHit();
         checkAppleCollection();
         checkFeatherCollision();
+        checkRunaCollection();
         if (appleSpawnTimer <= 0 && apples.length < 2) {
             if (Math.random() < 0.1) spawnApple();
             appleSpawnTimer = 100;
@@ -1846,7 +2213,8 @@ function hideDialogue() {
 }
 
 function showFinalThanksAndReturnToMenu() {
-    const finalText = "¡Muchas gracias por jugar! Esperamos que haya servido para aprender parte de la historia del Ecuador.";
+    isQuizPaused = true;
+    const finalText = "¡Muchas gracias por jugar! Esperamos que haya sido una experiencia de aprendizaje divertida.";
 
     showRunaNarration(finalText, () => {
         setTimeout(() => {
@@ -1875,11 +2243,12 @@ function showFinalThanksAndReturnToMenu() {
             } else {
                 window.showMenu();
             }
-        }, 2000);
-    });
+        }, 500); // Reducido el delay después de la narración final
+    }, 5000); // 5 segundos para leer el mensaje final
 }
 
 setInterval(() => {
+    if (isGamePaused || isQuizPaused) return;
     if (scene === 2 && playerLives > 0 && !pumaDefeated) {
         const dx = Math.abs(playerX - pumaX);
         const dy = Math.abs(playerY - pumaY);
@@ -1893,37 +2262,71 @@ setInterval(() => {
     }
 }, 1000);
 
-function showQuiz() {
+async function showQuiz() {
     quizActive = true;
     selectedOptionIndex = 0;
+    quizStartTime = Date.now();
+    isQuizPaused = true;
 
-    document.getElementById("quiz-question").textContent = quizQuestionText;
+    try {
+        // Obtener curso seleccionado o usar preguntas globales
+        const selectedCourseId = localStorage.getItem('selectedCourseId');
+        let questions;
 
-    const optionsContainer = document.getElementById("quiz-options");
-    optionsContainer.innerHTML = "";
+        console.log(`🎮 Nivel ${scene}: NPC cargando pregunta aleatoria`);
 
-    quizOptions.forEach((option, index) => {
-        const li = document.createElement("li");
-        li.textContent = option;
-        li.classList.add("quiz-option");
-        if (index === selectedOptionIndex) li.classList.add("selected");
-        optionsContainer.appendChild(li);
-    });
+        if (selectedCourseId) {
+            questions = await window.getRandomQuestions(1, selectedCourseId, null);
+            // Fallback a preguntas globales si el curso no tiene preguntas
+            if (questions.length === 0) {
+                console.log('🔄 Curso sin preguntas, intentando preguntas globales...');
+                questions = await window.getRandomQuestions(1, null, null);
+            }
+        } else {
+            questions = await window.getRandomQuestions(1, null, null);
+        }
 
-    document.getElementById("quiz-container").style.display = "flex";
+        if (questions.length === 0) {
+            console.log('🔔 No se encontraron preguntas para NPC en la base de datos del docente');
+            showCenterMessage("No hay preguntas configuradas. Contacta al docente.", 3000);
+            quizActive = false;
+            isQuizPaused = false;
+            return;
+        }
+
+        currentQuizQuestion = questions[0];
+        document.getElementById("quiz-question").textContent = currentQuizQuestion.enunciado;
+        const optionsContainer = document.getElementById("quiz-options");
+        optionsContainer.innerHTML = "";
+        currentQuizQuestion.opciones.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.className = "quiz-option";
+            li.textContent = option;
+            // Deshabilitar clics del mouse - solo se responde con teclado (flechas + 'A')
+            li.style.pointerEvents = "none";
+            optionsContainer.appendChild(li);
+        });
+        updateQuizSelection();
+        document.getElementById("quiz-container").style.display = "block";
+    } catch (error) {
+        console.error('Error cargando pregunta:', error);
+        showCenterMessage("Error al cargar pregunta. Contacta al docente.", 3000);
+        quizActive = false;
+        isQuizPaused = false;
+    }
 }
 
 // Mover selección con flechas SOLO cuando el quiz está activo
 document.addEventListener("keydown", (e) => {
-    if (!quizActive) return;
+    if (!quizActive || !currentQuizQuestion) return;
 
     if (e.key === "ArrowUp") {
-        selectedOptionIndex = (selectedOptionIndex - 1 + quizOptions.length) % quizOptions.length;
+        selectedOptionIndex = (selectedOptionIndex - 1 + currentQuizQuestion.opciones.length) % currentQuizQuestion.opciones.length;
         updateQuizSelection();
         e.preventDefault();
     }
     if (e.key === "ArrowDown") {
-        selectedOptionIndex = (selectedOptionIndex + 1) % quizOptions.length;
+        selectedOptionIndex = (selectedOptionIndex + 1) % currentQuizQuestion.opciones.length;
         updateQuizSelection();
         e.preventDefault();
     }
@@ -1940,38 +2343,64 @@ function updateQuizSelection() {
     });
 }
 
-function checkQuizAnswer() {
-    if (selectedOptionIndex === correctAnswerIndex) {
-        if (scene === 1 && !talkedToNPC) {
-            wisdomPoints += 10;
-            updateWisdomBar();
-            showCenterMessage("¡Correcto! +10 Sabiduría", 2500);
-            document.getElementById("quiz-container").style.display = "none";
-            quizActive = false;
-            startScene2();
+async function checkQuizAnswer() {
+    if (!currentQuizQuestion) return;
+
+    const timeSpent = quizStartTime ? (Date.now() - quizStartTime) / 1000 : 0;
+    const isCorrect = selectedOptionIndex === Number(currentQuizQuestion.correcta);
+
+    try {
+        // Registrar intento en la base de datos
+        if (window.recordAnswer && window.getCurrentUser()) {
+            await window.recordAnswer(currentQuizQuestion.id, selectedOptionIndex, timeSpent);
         }
-        else {
-            wisdomPoints += 10;
-            updateWisdomBar();
-            showCenterMessage("¡Correcto! +10 Sabiduría", 2500);
-            document.getElementById("quiz-container").style.display = "none";
-            quizActive = false;
-        }
-    } else {
-        if (scene === 1 && !talkedToNPC) {
-            showCenterMessage("Respuesta incorrecta...", 2500);
-            window.close();
-        }
-        else {
-            showCenterMessage("Respuesta incorrecta...", 2500);
-            document.getElementById("quiz-container").style.display = "none";
-            quizActive = false;
-        }
+    } catch (error) {
+        console.error('Error registrando respuesta:', error);
     }
+
+    if (isCorrect) {
+        const points = 10;
+        wisdomPoints += points;
+        updateWisdomBar();
+        showCenterMessage(`✅ ¡Correcto! +${points} Sabiduría`, 2500, "correct");
+    } else {
+        showCenterMessage("❌ Respuesta incorrecta...", 2500, "incorrect");
+    }
+
+    const container = document.getElementById("quiz-container");
+    container.style.display = "none";
+    container.classList.remove("show");
+    quizActive = false;
+    
+    // Mantener la pausa durante todo el proceso
+    isQuizPaused = true;
+
+    // Mostrar explicación del docente si existe, o despausar directamente
+    setTimeout(() => {
+        const afterExplanation = () => {
+            currentQuizQuestion = null;
+            quizStartTime = null;
+            isQuizPaused = false;
+        };
+
+        if (currentQuizQuestion && currentQuizQuestion.explicacion) {
+            showRunaNarration(currentQuizQuestion.explicacion, afterExplanation);
+        } else {
+            afterExplanation();
+        }
+    }, 2600);
 }
 
 
-document.getElementById("playButton").addEventListener("click", () => {
+let playButtonBusy = false;
+document.getElementById("playButton").addEventListener("click", (e) => {
+    // Prevenir doble clic robusto
+    if (playButtonBusy) return;
+    playButtonBusy = true;
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    setTimeout(() => { playButtonBusy = false; btn.disabled = false; }, 1000);
+
     if (!window.getCurrentUser || !window.getCurrentUser()) {
         if (typeof window.__authHandlersInit === "function") window.__authHandlersInit();
         if (typeof window.showAuth === "function") window.showAuth();
@@ -1984,11 +2413,16 @@ document.getElementById("playButton").addEventListener("click", () => {
         return;
     }
 
-    // Si el juego terminó, reiniciamos (aunque ahora tenemos un botón específico para esto, 
+    // Si el juego terminó, reiniciamos (aunque ahora tenemos un botón específico para esto,
     // mantenemos compatibilidad si el texto cambia a "Volver a Intentar")
     if (gameOverActive) {
         resetGameState();
     }
+
+    // Asegurar que estados de quiz no bloqueen el inicio
+    isQuizPaused = false;
+    quizActive = false;
+    runaQuizActive = false;
 
     // Actualizar HUD con información del jugador
     if (typeof window.updateGameHUD === 'function') {
@@ -2093,11 +2527,15 @@ window.togglePause = function () {
             document.getElementById('menuStats').style.display = 'none';
             document.getElementById('gameTitle').textContent = "PAUSA";
 
-            // Ocultar avisos de Ayllu y Quizzes
+            // Ocultar avisos de Ayllu y Quizzes PERO NO el quiz de runas activo
             const aylluWarning = document.getElementById('ayllu-warning');
             if (aylluWarning) aylluWarning.style.display = 'none';
+            
+            // NO ocultar el quiz de runas si está activo
             const quizContainer = document.getElementById('runa-quiz-container');
-            if (quizContainer) quizContainer.style.display = 'none';
+            if (quizContainer && !runaQuizActive) {
+                quizContainer.style.display = 'none';
+            }
         }
     } else {
         if (menu) menu.style.display = 'none';
@@ -2117,7 +2555,7 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    if (isGamePaused) return; // No permitir otros movimientos en pausa
+    if (isGamePaused || isQuizPaused) return;
 
     keysPressed[e.key] = true;
 
@@ -2137,7 +2575,10 @@ document.addEventListener('keydown', (e) => {
         if (scene1El) scene1El.style.display = 'block';
 
         scene = 1;
+        showRunaForScene();
         talkedToNPC = false;
+        // Ocultar trigger (la transición es al llegar al borde derecho tras hablar con NPC)
+        if (trigger) trigger.style.display = 'none';
         for (let key in keysPressed) {
             keysPressed[key] = false;
         }
@@ -2146,7 +2587,27 @@ document.addEventListener('keydown', (e) => {
 
     if (scene !== 0) {
         if ((e.key === 'a' || e.key === 'A')) handlePlayerAttack();
-        if ((e.key === 'b' || e.key === 'B')) checkNPCInteraction();
+        if ((e.key === 'b' || e.key === 'B')) {
+            // Hablar con NPC si está cerca (nivel 1)
+            if (nearNPC && !talkedToNPC && scene === 1) {
+                hideProximityHint();
+                nearNPC = false;
+                talkedToNPC = true;
+                showQuiz();
+            }
+            // Activar runa con 'B' si está cerca
+            else if (nearRuna && runaNearId) {
+                const runa = document.getElementById(`runa${runaNearId}`);
+                if (runa) {
+                    hideProximityHint();
+                    runa.style.display = 'none';
+                    runasCollected += 1;
+                    showRunaQuiz(runaNearId);
+                    nearRuna = false;
+                    runaNearId = null;
+                }
+            }
+        }
         if (e.key === 'ArrowDown' && isOnPlatform()) {
             playerY -= 5;
             isJumping = true;
